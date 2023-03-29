@@ -8,7 +8,7 @@ import numpy as np
 
 # corners are the tuple of tuples: ((a,b), (c,d))
 #
-# note: it's (y,x) since latitude is x
+# note: it's (y,x) since latitude is first
 # (a,b)
 # +--------------+
 # |              |
@@ -88,14 +88,21 @@ def setarea(px,py):
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
 fname1 = "./ss 1.png"
 
-with Image.open(fname1) as im:
+corners2 = ((41.84912, -71.41360), (41.83615, -71.37212))
+fname2 = "./ss 2.png"
+
+corners = corners2
+fname = fname2
+
+with Image.open(fname) as im:
     arr = np.asarray(im)[:, :, :3]
     imageconf = arr.shape[1], arr.shape[0]
 
 data = read_gps("./combined.txt")
 for pt in data:
-    px, py = gps2pixel(pt, corners1, imageconf)
+    px, py = gps2pixel(pt, corners, imageconf)
     setarea(px, py)
+plt.title(fname)
 plt.imshow(arr)
 plt.tight_layout()
 plt.show()
