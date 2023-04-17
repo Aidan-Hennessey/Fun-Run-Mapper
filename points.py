@@ -28,13 +28,17 @@ def corner2height(corners):
     (a, b), (c, d) = corners
     return a - c
 
-def gps2pixel(gps, corners, imageconf):
+"""
+Given a gps coord, the corners of an image, and its height and width,
+returns the corresponding pixel location
+"""
+def gps2pixel(coords, corners, imageconf):
     width = corner2width(corners)
     height = corner2height(corners)
     iwidth, iheight = imageconf
     
     (a, b), (c, d) = corners
-    y, x = gps
+    y, x = coords
     py = (a - y) * (iheight/height)
     px = (x - b) * (iwidth/width)
     return (int(px), int(py))
@@ -62,7 +66,7 @@ def read_gps(fname):
         lines = list(map(line2pt, lines))
         return lines
     
-def setarea(arr,px,py):
+def plot_point(arr,px,py,imageconf):
     ret = arr.copy()
     for i in range(0, 5):
         for j in range(0, 5):
@@ -80,7 +84,7 @@ def setarea(arr,px,py):
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
 fname1 = "./ss 1.png"
 
-corners2 = ((41.84852, -71.41100), (41.83555, -71.37812))
+corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
 fname2 = "./ss 2.png"
 
 corners = corners2
@@ -94,7 +98,7 @@ data = read_gps("./combined.txt")
 new_arr = im
 for pt in data:
     px, py = gps2pixel(pt, corners, imageconf)
-    new_arr = setarea(new_arr, px, py)
+    new_arr = plot_point(new_arr, px, py, imageconf)
 # plt.title(fname)
 # plt.imshow(new_arr)
 # plt.show()
@@ -177,7 +181,7 @@ def update(val):
     print('new corners', new_corners)
     for pt in data:
         px, py = gps2pixel(pt, new_corners, imageconf)
-        new_arr = setarea(new_arr, px, py)
+        new_arr = plot_point(new_arr, px, py, imageconf)
     ax.imshow(new_arr)
 
     fig.canvas.draw_idle()
@@ -201,7 +205,7 @@ button.on_clicked(reset)
 new_arr = im
 for pt in data:
     px, py = gps2pixel(pt, corners, imageconf)
-    new_arr = setarea(new_arr, px, py)
+    new_arr = plot_point(new_arr, px, py, imageconf)
 ax.imshow(new_arr)
 plt.show()
 
