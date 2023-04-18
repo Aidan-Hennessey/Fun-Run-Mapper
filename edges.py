@@ -18,6 +18,19 @@ fname = fname2
 """END GLOBALS"""
 
 """
+Not actually the euclidian distance, but an easy to compute metric that corresponds pretty well
+Precisely, it is the reciprocal eccentrcity of the ellipse with foci at the endpoints of the edge
+which contains point
+"""
+def point_edge_dist(point, edge):
+    p1, p2 = edge
+    focal_length = math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) + 0.0000001
+    major_axis_length = \
+            math.sqrt((p1[0] - point[0])**2 + (p1[1] - point[1])**2) \
+            + math.sqrt((point[0] - p2[0])**2 + (point[1] - p2[1])**2)
+    return major_axis_length / focal_length
+
+"""
 Returns whether end is to the [direction] of start
 
 Params:
@@ -71,30 +84,22 @@ def griddy_edges(points):
     edges = []
     for point in points:
         for dir in ["north", "south", "east", "west"]:
-            edges.append(tuple(sorted((point, find_closest_in_direction(point, points, dir)))))
+            closest = find_closest_in_direction(point, points, dir)
+            if closest is not None:
+                edges.append(tuple(sorted((point, closest))))
     return edges
-
-def draw_green_line(img):
-    # Define the start and end points of the line
-    pt1 = (100, 100)
-    pt2 = (200, 200)
-
-    # Draw a green line on the image
-    img = cv2.line(img, pt1, pt2, (0, 255, 0), thickness=2)
-
-    return img
-
 
 def plot_edge(img, edge, imageconf):
     (x1, y1), (x2, y2) = edge
     p1 = gps2pixel((x1, y1), corners, imageconf)
     p2 = gps2pixel((x2, y2), corners, imageconf)
+    (x1, y1), (x2, y2) = p1, p2
 
     p1_inbounds = (x1 >= 0 and x1 < imageconf[0] and y1 >= 0 and y1 < imageconf[1])
     p2_inbounds = (x2 >= 0 and x2 < imageconf[0] and y2 >= 0 and y2 < imageconf[1])
 
     if p1_inbounds and p2_inbounds:
-        img = cv2.line(img, p1, p2, (0, 255, 0), thickness=2)
+        img = cv2.line(img, p1, p2, (0, 255, 0), thickness=1)
 
     return img
 
@@ -113,15 +118,30 @@ def main():
         im = np.asarray(im)[:, :, :3]
         imageconf = im.shape[1], im.shape[0]
 
-    data = read_gps("./combined.txt")
-    for pt in data:
+    for pt in points:
         px, py = gps2pixel(pt, corners, imageconf)
         im = plot_point(im, px, py, imageconf)
     for edge in edges:
-        plot_edge(im, edge, imageconf)
+        im = plot_edge(im, edge, imageconf)
+
+    fig, ax = plt.subplots()
+    ax.imshow(im)
+
+    def onclick(event):
+        point = int(event.xdata), int(event.ydata)
+        closest = None
+        closest_distance = math.inf
+        for edge in edges:
+            converted_edge = (gps2pixel(edge[0], corners, imageconf), gps2pixel(edge[1], corners, imageconf))
+            distance = point_edge_dist(point, converted_edge)
+            if distance < closest_distance:
+                closest_distance = distance
+                closest = edge
+        print((gps2pixel(closest[0], corners, imageconf), gps2pixel(closest[1], corners, imageconf)))
+
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
     plt.title(fname)
-    plt.imshow(im)
     plt.show()
 
     # TODO: Interface to edit edge list
