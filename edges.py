@@ -7,6 +7,8 @@ import cv2
 from points import read_gps, plot_point, gps2pixel
 
 """GLOBALS"""
+tol = 0.000001 # float comparison tolerance
+
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
 fname1 = "./ss 1.png"
 
@@ -24,7 +26,7 @@ which contains point
 """
 def point_edge_dist(point, edge):
     p1, p2 = edge
-    focal_length = math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) + 0.0000001
+    focal_length = math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) + 0.000000000001
     major_axis_length = \
             math.sqrt((p1[0] - point[0])**2 + (p1[1] - point[1])**2) \
             + math.sqrt((point[0] - p2[0])**2 + (point[1] - p2[1])**2)
@@ -77,6 +79,26 @@ def find_closest_in_direction(target, points, direction):
     return closest
 
 """
+Determines whether an edge is already included in a list of edges
+NOTE: This assumes every point's x coord is unique. Should be fine bc they're floats
+
+Params:
+    new_edge - a 2tuple of 2tuples of floats ((x1, y1), (x2, y2))
+    edges - a list of edges, each represented same as new_edge
+Returns:
+    A boolean - true if new_edge in edges, false otherwise
+"""
+def already_included(new_edge, edges) -> bool:
+    included = False
+    (nx1, ny1), (nx2, ny2) = new_edge
+    for edge in edges:
+        (x1, y1), (x2, y2) = edge
+        if (abs(nx1 - x1) < 0.00001 and abs(nx2 - x2) < 0.00001) or (abs(nx1 - x2) < 0.00001 and abs(nx2 - x1) < 0.00001):
+            included == True
+    return included
+            
+
+"""
 Adds an edge to from each point to its closest neighbor in each direction
 Edges are represented as (point, point) with the points sorted lexicographically
 """
@@ -85,10 +107,16 @@ def griddy_edges(points):
     for point in points:
         for dir in ["north", "south", "east", "west"]:
             closest = find_closest_in_direction(point, points, dir)
-            if closest is not None:
+            if closest is not None and not already_included((point, closest), edges):
                 edges.append(tuple(sorted((point, closest))))
+
     return edges
 
+"""
+Plots edge on img
+edge is passed as gps coords, not pixel coords
+imageconf is a tuple containing (width, hight) of img
+"""
 def plot_edge(img, edge, imageconf):
     (x1, y1), (x2, y2) = edge
     p1 = gps2pixel((x1, y1), corners, imageconf)
@@ -113,9 +141,27 @@ def main():
     # make edge list with nearest neighbors
     edges = griddy_edges(points)
 
+    # finds closest edge to click and removes it from edgelist
+    def onclick(event):
+        point = int(event.xdata), int(event.ydata)
+        closest = None
+        closest_distance = math.inf
+        for edge in edges:
+            converted_edge = (gps2pixel(edge[0], corners, imageconf), gps2pixel(edge[1], corners, imageconf))
+            distance = point_edge_dist(point, converted_edge)
+            if distance < closest_distance:
+                closest_distance = distance
+                closest = edge
+
+        print(closest)
+        print((gps2pixel(closest[0], corners, imageconf), gps2pixel(closest[1], corners, imageconf)))
+        if closest is not None:
+            edges.remove(closest)
+
     # plot edges
     with Image.open(fname) as im:
         im = np.asarray(im)[:, :, :3]
+        orig_im = im.copy()
         imageconf = im.shape[1], im.shape[0]
 
     for pt in points:
@@ -127,24 +173,27 @@ def main():
     fig, ax = plt.subplots()
     ax.imshow(im)
 
-    def onclick(event):
-        point = int(event.xdata), int(event.ydata)
-        closest = None
-        closest_distance = math.inf
-        for edge in edges:
-            converted_edge = (gps2pixel(edge[0], corners, imageconf), gps2pixel(edge[1], corners, imageconf))
-            distance = point_edge_dist(point, converted_edge)
-            if distance < closest_distance:
-                closest_distance = distance
-                closest = edge
-        print((gps2pixel(closest[0], corners, imageconf), gps2pixel(closest[1], corners, imageconf)))
-
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
     plt.title(fname)
     plt.show()
 
-    # TODO: Interface to edit edge list
+    # replot
+    im = orig_im
+    for pt in points:
+        px, py = gps2pixel(pt, corners, imageconf)
+        im = plot_point(im, px, py, imageconf)
+    for edge in edges:
+        im = plot_edge(im, edge, imageconf)
+
+    fig, ax = plt.subplots()
+    ax.imshow(im)
+
+    plt.title(fname)
+    plt.show()
+
+    # TODO: Interface to add edges
+    # TODO: save edges
 
 if __name__ == "__main__":
     main()

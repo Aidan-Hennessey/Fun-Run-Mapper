@@ -55,6 +55,27 @@ def pixel2gps(pixel, corners, imageconf):
     y = (-py) * (height/iheight) + b
     return (x,y)
 
+"""
+Removes duplicates from list of points
+
+Params:
+    points - a list of 2tuples of floats
+Returns: list of 2tuples of floats, each tuple distinct
+"""
+def remove_duplicate_points(points):
+    unique_points = []
+    for point in points:
+        is_a_duplicate = False
+        nx, ny = point
+        for unique_point in unique_points:
+            ux, uy = unique_point
+            if nx == ux and ny == uy:
+                is_a_duplicate = True
+        if not is_a_duplicate:
+            unique_points.append(point)
+    return unique_points
+
+
 def read_gps(fname):
     """returns (n,2) array of gps data, expects `lattidue_float, longitute_float`"""
     def line2pt(line):
@@ -63,8 +84,9 @@ def read_gps(fname):
 
     with open(fname) as fo:
         lines = fo.readlines()
-        lines = list(map(line2pt, lines))
-        return lines
+        points = list(map(line2pt, lines))
+        points = remove_duplicate_points(points)
+        return points
     
 def plot_point(arr,px,py,imageconf):
     ret = arr.copy()
