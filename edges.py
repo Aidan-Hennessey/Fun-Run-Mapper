@@ -165,6 +165,11 @@ def write_edges_to_file(edges, filename):
         for edge in edges:
             f.write(str(edge[0][0])+", "+str(edge[0][1])+", "+str(edge[1][0])+", "+str(edge[1][1])+'\n')
 
+def write_points_to_file(points, filename):
+    with open(filename, 'w') as f:
+        for point in points:
+            f.write(str(point[0])+", "+str(point[1])+'\n')
+
 """
 Returns the image with points and edges drawn on it
 Params are exactly what you would think
@@ -188,6 +193,34 @@ def read_edges(filename):
     with open(filename) as fo:
         lines = fo.readlines()
         return list(map(line2edge, lines))
+    
+
+"""
+Displays a plot with a specified action on clicking
+
+Params:
+    im - the underlying image of the plot
+    points - the points to plot on the image
+    edges - the edges to plot
+    onclick - the function to call when the plot is clicked
+    title - the plot's title
+"""
+def plot_with_action(im, points, edges, imageconf, onclick=None, title="college hill"):
+    im = im.copy()
+    im = add_pts_and_edges(im, points, edges, imageconf)
+
+    fig, ax = plt.subplots()
+    ax.imshow(im)
+
+    if onclick is not None:
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
+
+    plt.title(title)
+    plt.show()
+
+    if onclick is not None:
+        fig.canvas.mpl_disconnect(cid)
+
 
 """
 A graphical interface to make an edge list for our graph
@@ -204,21 +237,25 @@ def main():
     # read in points
     points = read_gps("combined.txt")
     
+    # load edges
     if os.path.exists("edge_list.txt"):
         edges = read_edges("edge_list.txt")
     else:
         # make edge list with nearest neighbors
         edges = griddy_edges(points)
 
+    ################# ADDING POINTS ##################
+
+    def add_point(event):
+        pixel_coords = int(event.xdata), int(event.ydata)
+        points.append(pixel2gps(pixel_coords, corners, imageconf))
+
+    plot_with_action(im, points, edges, imageconf, add_point, "click to add point")
+
     ################# REMOVING EDGES #################
 
-    im = add_pts_and_edges(im, points, edges, imageconf)
-
-    fig, ax = plt.subplots()
-    ax.imshow(im)
-
     # finds closest edge to click and removes it from edgelist
-    def onclick(event):
+    def remove_edge(event):
         point = int(event.xdata), int(event.ydata)
         # print(closest)
         # print((gps2pixel(closest[0], corners, imageconf), gps2pixel(closest[1], corners, imageconf)))
@@ -226,22 +263,13 @@ def main():
         if closest is not None:
             edges.remove(closest)
 
-    cid = fig.canvas.mpl_connect('button_press_event', onclick)
-
-    plt.title("click to remove")
-    plt.show()
+    plot_with_action(im, points, edges, imageconf, remove_edge, "click to remove")
 
     ###################### ADDING EDGES ####################
 
-    im = orig_im.copy()
-    im = add_pts_and_edges(im, points, edges, imageconf)
-
-    fig, ax = plt.subplots()
-    ax.imshow(im)
-
     # two clicks creates an edge between the clicked points
     first_point = None
-    def onclick2(event):
+    def add_edge(event):
         nonlocal first_point
         coords = pixel2gps((int(event.xdata), int(event.ydata)), corners, imageconf)
         point = closest_point(coords, points)
@@ -253,25 +281,14 @@ def main():
                 edges.append(edge)
             first_point = None
 
-    fig.canvas.mpl_disconnect(cid)
-    cid = fig.canvas.mpl_connect('button_press_event', onclick2)
-
-    plt.title("click to add")
-    plt.show()
+    plot_with_action(im, points, edges, imageconf, add_edge, "click pairs of points to add edges")
 
     #################### SHOW RESULT ####################
 
-    im = orig_im.copy()
-    im = add_pts_and_edges(im, points, edges, imageconf)
+    plot_with_action(im, points, edges, imageconf, title="result graph")
 
-    fig, ax = plt.subplots()
-    ax.imshow(im)
-    fig.canvas.mpl_disconnect(cid)
-
-    plt.title("final map")
-    plt.show()
-
-    ############### SAVE EDGES ###############
+    ############### SAVE UPDATES ###############
+    write_points_to_file(points, "combined.txt")
     write_edges_to_file(edges, "edge_list.txt")
 
 

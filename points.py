@@ -21,6 +21,17 @@ from matplotlib.widgets import Slider, Button
 
 # imageconf is tuple (width, height)
 
+"""GLOBALS"""
+corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
+fname1 = "./ss 1.png"
+
+corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
+fname2 = "./ss 2.png"
+
+corners = corners2
+fname = fname2
+"""END GLOBALS"""
+
 def corner2width(corners):
     (a, b), (c, d) = corners
     return d - b
@@ -44,8 +55,10 @@ def gps2pixel(coords, corners, imageconf):
     px = (x - b) * (iwidth/width)
     return (int(px), int(py))
 
+"""
+Returns the gps coords of a pixel on the image
+"""
 def pixel2gps(pixel, corners, imageconf):
-    """untested"""
     width = corner2width(corners)
     height = corner2height(corners)
     iwidth, iheight = imageconf
@@ -93,6 +106,9 @@ def read_gps(fname):
         points = remove_duplicate_points(points)
         return points
     
+"""
+Places a red dot on the image represented by arr at location (px, py)
+"""
 def plot_point(arr,px,py,imageconf):
     ret = arr.copy()
     for i in range(0, 5):
@@ -108,15 +124,6 @@ def plot_point(arr,px,py,imageconf):
             ret[y, x, 2] = 0
     return ret
 
-corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
-fname1 = "./ss 1.png"
-
-corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
-fname2 = "./ss 2.png"
-
-corners = corners2
-fname = fname2
-
 def main():
     with Image.open(fname) as im:
         im = np.asarray(im)[:, :, :3]
@@ -127,12 +134,6 @@ def main():
     for pt in data:
         px, py = gps2pixel(pt, corners, imageconf)
         new_arr = plot_point(new_arr, px, py, imageconf)
-    # plt.title(fname)
-    # plt.imshow(new_arr)
-    # plt.show()
-
-
-
 
     # SLIDER
     # ======
@@ -179,8 +180,6 @@ def main():
         valinit=1,
         orientation="vertical"
     )
-
-
 
     # The function to be called anytime a slider's value changes
     def update(val):
