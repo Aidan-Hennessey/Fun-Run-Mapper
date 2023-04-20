@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import cv2
+import os
 
 from points import read_gps, plot_point, gps2pixel, pixel2gps
 
@@ -155,30 +156,63 @@ def closest_point(target, points):
     return closest
 
 """
-A graphical interface to make an edge list for our graph
-On the first graph, click all the incorrect edges to remove them
-On the second graph, click all the pairs of points between which you want to add edges
+Params:
+    Edges is list of edges (an edge is a 2tuple of points, which are each 2tuples of floats)
+    filename is a string containing the path to the file to write to
 """
-def main():
-    # read in points
-    points = read_gps("combined.txt")
-    
-    # make edge list with nearest neighbors
-    edges = griddy_edges(points)
+def write_edges_to_file(edges, filename):
+    with open(filename, 'w') as f:
+        for edge in edges:
+            f.write(str(edge[0][0])+", "+str(edge[0][1])+", "+str(edge[1][0])+", "+str(edge[1][1])+'\n')
 
-    ################# REMOVING EDGES #################
-
-    # plot edges
-    with Image.open(fname) as im:
-        im = np.asarray(im)[:, :, :3]
-        orig_im = im.copy()
-        imageconf = im.shape[1], im.shape[0]
-
+"""
+Returns the image with points and edges drawn on it
+Params are exactly what you would think
+"""
+def add_pts_and_edges(im, points, edges, imageconf):
     for pt in points:
         px, py = gps2pixel(pt, corners, imageconf)
         im = plot_point(im, px, py, imageconf)
     for edge in edges:
         im = plot_edge(im, edge, imageconf)
+    return im
+
+"""
+Reads in a work-in-progress edge list from a file
+"""
+def read_edges(filename):
+    def line2edge(line):
+        coords = line.strip().split(", ")
+        return (float(coords[0]), float(coords[1])), (float(coords[2]), float(coords[3]))
+
+    with open(filename) as fo:
+        lines = fo.readlines()
+        return list(map(line2edge, lines))
+
+"""
+A graphical interface to make an edge list for our graph
+On the first graph, click all the incorrect edges to remove them
+On the second graph, click all the pairs of points between which you want to add edges
+"""
+def main():
+    # set up image
+    with Image.open(fname) as im:
+        im = np.asarray(im)[:, :, :3]
+        orig_im = im.copy()
+        imageconf = im.shape[1], im.shape[0]
+
+    # read in points
+    points = read_gps("combined.txt")
+    
+    if os.path.exists("edge_list.txt"):
+        edges = read_edges("edge_list.txt")
+    else:
+        # make edge list with nearest neighbors
+        edges = griddy_edges(points)
+
+    ################# REMOVING EDGES #################
+
+    im = add_pts_and_edges(im, points, edges, imageconf)
 
     fig, ax = plt.subplots()
     ax.imshow(im)
@@ -199,13 +233,8 @@ def main():
 
     ###################### ADDING EDGES ####################
 
-    # replot
-    im = orig_im
-    for pt in points:
-        px, py = gps2pixel(pt, corners, imageconf)
-        im = plot_point(im, px, py, imageconf)
-    for edge in edges:
-        im = plot_edge(im, edge, imageconf)
+    im = orig_im.copy()
+    im = add_pts_and_edges(im, points, edges, imageconf)
 
     fig, ax = plt.subplots()
     ax.imshow(im)
@@ -232,13 +261,8 @@ def main():
 
     #################### SHOW RESULT ####################
 
-    # replot
-    im = orig_im
-    for pt in points:
-        px, py = gps2pixel(pt, corners, imageconf)
-        im = plot_point(im, px, py, imageconf)
-    for edge in edges:
-        im = plot_edge(im, edge, imageconf)
+    im = orig_im.copy()
+    im = add_pts_and_edges(im, points, edges, imageconf)
 
     fig, ax = plt.subplots()
     ax.imshow(im)
@@ -247,7 +271,9 @@ def main():
     plt.title("final map")
     plt.show()
 
-    # TODO: save edges
+    ############### SAVE EDGES ###############
+    write_edges_to_file(edges, "edge_list.txt")
+
 
 if __name__ == "__main__":
     main()
