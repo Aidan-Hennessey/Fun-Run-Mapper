@@ -185,7 +185,7 @@ def main():
     # The function to be called anytime a slider's value changes
     def update(val):
         global corners
-        global im
+        nonlocal im
         ax.clear()
         new_arr = im
         (a, b), (c, d) = corners
