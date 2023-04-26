@@ -55,9 +55,7 @@ def gps2pixel(coords, corners, imageconf):
     px = (x - b) * (iwidth/width)
     return (int(px), int(py))
 
-"""
-Returns the gps coords of a pixel on the image
-"""
+"""Returns the gps coords of a pixel on the image"""
 def pixel2gps(pixel, corners, imageconf):
     width = corner2width(corners)
     height = corner2height(corners)
@@ -106,9 +104,7 @@ def read_gps(fname):
         points = remove_duplicate_points(points)
         return points
     
-"""
-Places a red dot on the image represented by arr at location (px, py)
-"""
+"""Places a red dot on the image represented by arr at location (px, py)"""
 def plot_point(arr,px,py,imageconf):
     ret = arr.copy()
     for i in range(0, 5):

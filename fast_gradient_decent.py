@@ -3,6 +3,7 @@ import math
 
 from edges import closest_point, read_edges
 from points import read_gps
+from kd_tree import KDTree
 
 ################ HYPERPARAMETERS ####################
 XY_STEP = 0.00001
@@ -15,20 +16,63 @@ LEARNING_RATE = 0.1
 HOARDING_FACTOR = 3 # the higher this hyperparam, the less aggressively we'll prune
 
 
+"""Return a better parameter bundle """
+def gradient_decend(points, graph, parameters):
+    x, y, theta, r, gamma = parameters
+    xgrad, ygrad, theta_grad, rgrad, gamma_grad = gradient(points, graph, parameters)
+
+    xgrad *= LEARNING_RATE
+    ygrad *= LEARNING_RATE
+    theta_grad *= LEARNING_RATE
+    rgrad *= LEARNING_RATE
+    gamma_grad *= LEARNING_RATE
+    
+    return x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
+
+"""Compute the gradient using finite differences"""
+def gradient(points, graph, parameters):
+    x, y, theta, r, gamma = parameters
+    unperturbed_loss = embedding_loss(points, graph, parameters)
+
+    x_perturbed = (x + XY_STEP, y, theta, r, gamma)
+    xgrad = (embedding_loss(points, graph, x_perturbed) - unperturbed_loss) / XY_STEP
+    y_perturbed = (x, y + XY_STEP, theta, r, gamma)
+    ygrad = (embedding_loss(points, graph, y_perturbed) - unperturbed_loss) / XY_STEP
+    theta_perturbed = (x, y, theta + THETA_STEP, r, gamma)
+    theta_grad = (embedding_loss(points, graph, theta_perturbed) - unperturbed_loss) / THETA_STEP
+    r_perturbed = (x, y, theta, r + R_STEP, gamma)
+    rgrad = (embedding_loss(points, graph, r_perturbed) - unperturbed_loss) / R_STEP
+    gamma_perturbed = (x, y, theta, r, gamma + GAMMA_STEP)
+    gamma_grad = (embedding_loss(points, graph, gamma_perturbed) - unperturbed_loss) / GAMMA_STEP
+
+    return xgrad, ygrad, theta_grad, rgrad, gamma_grad
+
 """
 Returns the loss of an embedding of points in the graph
 Does so by finding the best subgraph corresponding to the embedding
 and calculates the loss between the points and the subgraph
 """
 def embedding_loss(points, graph, parameters):
+    # embedding (unchanged)
     points = embed(points, parameters)
-    subgraph = representative_subgraph(points, graph, parameters)
-    return regularized_loss(points, subgraph, parameters)
 
-"""Finds subgraph minimizing regularized loss for a given embedding"""
-def representative_subgraph(points, graph, parameters):
-    img = image(points, graph)
-    return fast_prune(points, img)
+    #setup for image and fast_prune
+    points_tree = KDTree(points)
+    samples_to_parents = {}
+    graph_points = edges_as_points(graph, samples_to_parents)
+    graph_tree = KDTree(graph_points)
+
+    # image
+    img = image(points, graph_tree, samples_to_parents)
+
+    # setup for fast_prune
+    image_tree = KDTree(edges_as_points(img, samples_to_parents))
+
+
+    subgraph = fast_prune(points, points_tree, img, image_tree, samples_to_parents)
+
+    #regularized loss
+    return regularized_loss(points, subgraph, parameters)
 
 """Using a set of points in box-space and a parameter bundle, embeds the points in GPS coords"""
 def embed(points, parameters):
@@ -41,23 +85,34 @@ def embed(points, parameters):
     return embedded_points
 
 """Returns the image of the map from points to their closest edges"""
-def image(points, graph):
-    edges = []
+def image(points, graph_tree, samples_to_edges):
+    edges = set()
     for point in points:
-        new_edge = closest_edge(point, graph)
-        if new_edge not in edges:
-            edges.append(new_edge)
-    return edges
+        new_edge = samples_to_edges[graph_tree.closest_point(point)]
+        edges.add(new_edge)
+    return list(edges)
 
-"""Finds the closest edge by euclidian distance to a point"""
-def closest_edge(point, graph):
-    closest_distance = math.inf
-    for edge in graph:
-        new_dist = point_to_line_segment_distance(point, edge)
-        if new_dist < closest_distance:
-            closest_distance = new_dist
-            closest = edge
-    return closest
+"""Prunes the subgraph in a quick, heuristic way"""
+def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
+    # calc average distance from points to edges
+    points2edges_dist = 0
+    for point in points:
+        points2edges_dist += point_to_line_segment_distance(point, closest_edge(point, edges))
+    points2edges_dist /= len(points)
+    # multiply by constant to get threshold
+    threshold = HOARDING_FACTOR * points2edges_dist
+
+    # remove bad edges (a bad edge is one that doesn't stay close to the points)
+    for edge in edges:
+        v1, v2 = edge
+        m = (v1[0] + v2[0]) / 2, (v1[1] + v2[1]) / 2
+        edge_badness = np.max([closest_point(v1, points)[1], \
+                            closest_point(v2, points)[1], \
+                            closest_point(m, points)[1]])
+        if edge_badness > threshold and len(edges) > 1:
+            edges.remove(edge)
+    
+    return edges
 
 """The euclidian distance between a point and an edge. Written by chat GPT"""
 def point_to_line_segment_distance(point, edge):
@@ -155,61 +210,6 @@ def prune(points, edges, parameters):
 def point_point_dist(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-"""Prunes the subgraph in a quick, heuristic way"""
-def fast_prune(points, edges):
-    edges = edges.copy()
-    # calc average distance from points to edges
-    points2edges_dist = 0
-    for point in points:
-        points2edges_dist += point_to_line_segment_distance(point, closest_edge(point, edges))
-    points2edges_dist /= len(points)
-    # multiply by constant to get threshold
-    threshold = HOARDING_FACTOR * points2edges_dist
-
-    # remove bad edges (a bad edge is one that doesn't stay close to the points)
-    for edge in edges:
-        v1, v2 = edge
-        m = (v1[0] + v2[0]) / 2, (v1[1] + v2[1]) / 2
-        edge_badness = np.max([closest_point(v1, points)[1], \
-                            closest_point(v2, points)[1], \
-                            closest_point(m, points)[1]])
-        if edge_badness > threshold and len(edges) > 1:
-            edges.remove(edge)
-    
-    return edges
-        
-    
-"""Compute the gradient using finite differences"""
-def gradient(points, graph, parameters):
-    x, y, theta, r, gamma = parameters
-    unperturbed_loss = embedding_loss(points, graph, parameters)
-
-    x_perturbed = (x + XY_STEP, y, theta, r, gamma)
-    xgrad = (embedding_loss(points, graph, x_perturbed) - unperturbed_loss) / XY_STEP
-    y_perturbed = (x, y + XY_STEP, theta, r, gamma)
-    ygrad = (embedding_loss(points, graph, y_perturbed) - unperturbed_loss) / XY_STEP
-    theta_perturbed = (x, y, theta + THETA_STEP, r, gamma)
-    theta_grad = (embedding_loss(points, graph, theta_perturbed) - unperturbed_loss) / THETA_STEP
-    r_perturbed = (x, y, theta, r + R_STEP, gamma)
-    rgrad = (embedding_loss(points, graph, r_perturbed) - unperturbed_loss) / R_STEP
-    gamma_perturbed = (x, y, theta, r, gamma + GAMMA_STEP)
-    gamma_grad = (embedding_loss(points, graph, gamma_perturbed) - unperturbed_loss) / GAMMA_STEP
-
-    return xgrad, ygrad, theta_grad, rgrad, gamma_grad
-
-"""Return a better parameter bundle """
-def gradient_decend(points, graph, parameters):
-    x, y, theta, r, gamma = parameters
-    xgrad, ygrad, theta_grad, rgrad, gamma_grad = gradient(points, graph, parameters)
-
-    xgrad *= LEARNING_RATE
-    ygrad *= LEARNING_RATE
-    theta_grad *= LEARNING_RATE
-    rgrad *= LEARNING_RATE
-    gamma_grad *= LEARNING_RATE
-    
-    return x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
-
 """Returns a random intial parameter bundle"""
 def random_init():
     x = 41.816 + 0.03 * np.random.rand()
@@ -219,12 +219,30 @@ def random_init():
     gamma = 0.7 + 0.6 * np.random.rand()
     return x, y, theta, r, gamma
 
+"""Takes a list of edges and discretizes it into a large list of points"""
+def edges_as_points(edges, dict, fineness=10):
+    points = []
+    for edge in edges:
+        points += edge_to_points(edge, dict, fineness)
+
+def edge_to_points(edge, dict, fineness):
+    (x1, y1), (x2, y2) = edge
+    points = []
+    for i in range(fineness + 1):
+        x = x1 + (x2 - x1) * (i / fineness)
+        y = y1 + (y2 - y1) * (i / fineness)
+        points.append((x, y))
+        dict[(x, y)] = edge
+    return points
+
 """For testing"""
 def main():
     points = []
     for _ in range(500):
         points.append((np.random.rand(), np.random.rand()))
     edges = read_edges("edge_list.txt")
+    edge_points = edges_as_points(edges)
+    edges_tree = KDTree(edge_points)
     parameters = random_init()
 
     print(parameters)
