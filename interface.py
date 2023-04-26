@@ -59,12 +59,17 @@ def GD_iter():
     write_param_bundle(improved_bundle)
 
 """Writes a list of edges (aka a subgraph) to stdout"""
-def write_edge_list():
-    pass
+def write_edge_list(edges):
+    print(len(edges))
+    for edge in edges:
+        (a, b), (c, d) = edge
+        print(a, " ", b, " ", c, " ", d)
 
 """Interface wrapper for representative_subgraph"""
 def subgraph():
-    pass
+    points, graph, parameters = read_in_data()
+    subg = representative_subgraph(points, graph, parameters)
+    write_edge_list(subg)
 
 """interface wrapper for regularized_loss"""
 def loss():
@@ -76,7 +81,6 @@ The REPL the website interacts with
 """
 def REPL():
     while True:
-        # read everything in stdin
         line = input()
         if line == "GD_iter":
             GD_iter()
