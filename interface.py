@@ -4,7 +4,7 @@ import sys
 
 from points import read_gps
 from edges import read_edges, point_edge_dist
-from gradient_decent import gradient_decend, representative_subgraph, regularized_loss
+from gradient_decent import gradient_decend, representative_subgraph, regularized_loss, random_init
 
 """
 Reads from stdin a point, graph, and parameter bundle
@@ -71,10 +71,18 @@ def subgraph():
     subg = representative_subgraph(points, graph, parameters)
     write_edge_list(subg)
 
-"""interface wrapper for regularized_loss"""
+"""
+interface wrapper for regularized_loss
+NOTE: Edges passed should JUST BE THE SUBGRAPH, NOT THE WHOLE GRAPH
+"""
 def loss():
-    points, graph, parameters = read_in_data()
-    print(regularized_loss(points, graph, parameters))
+    points, subgraph, parameters = read_in_data()
+    print(regularized_loss(points, subgraph, parameters))
+
+"""Interface wrapper for random_init"""
+def get_init():
+    params = random_init()
+    write_param_bundle(params)
 
 """
 The REPL the website interacts with
@@ -88,5 +96,7 @@ def REPL():
             subgraph()
         elif line == "loss":
             loss()
+        elif "get_init":
+            get_init()
         else:
             print("uh-oh! That's not a recognized function call", file=sys.stderr)

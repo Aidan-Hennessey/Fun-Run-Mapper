@@ -1,16 +1,17 @@
 import numpy as np
 import math
 
-from edges import closest_point
+from edges import closest_point, read_edges
+from points import read_gps
 
 ################ HYPERPARAMETERS ####################
 XY_STEP = 0.00001
 THETA_STEP = 0.0001
-R_STEP = 0.001
-GAMMA_STEP = 0.00001
+R_STEP = 0.000001
+GAMMA_STEP = 0.000001
 
-REGULARIZATION_CONST = 0.1
-LEARNING_RATE = 0.01
+REGULARIZATION_CONST = 0.2
+LEARNING_RATE = 0.1
 
 
 """
@@ -20,7 +21,7 @@ and calculates the loss between the points and the subgraph
 """
 def embedding_loss(points, graph, parameters):
     points = embed(points, parameters)
-    subgraph = representative_subgraph()
+    subgraph = representative_subgraph(points, graph, parameters)
     return regularized_loss(points, subgraph, parameters)
 
 """Finds subgraph minimizing regularized loss for a given embedding"""
@@ -75,6 +76,8 @@ def point_to_line_segment_distance(point, edge):
     e_vec_squared_length = e_vec[0] ** 2 + e_vec[1] ** 2
 
     # Calculate the parameter along the line segment where the closest point to p lies
+    if e_vec_squared_length == 0:
+        print(edge)
     param = dot_product / e_vec_squared_length
 
     if param < 0:
@@ -101,25 +104,37 @@ def regularized_loss(points, edges, parameters):
     
     points2edges = 0
     for point in points:
+        # print("current point: ", point)
+        # print("closest edge: ", closest_edge(point, edges))
+        # print("dist: ", point_to_line_segment_distance(point, closest_edge(point, edges)))
         points2edges += point_to_line_segment_distance(point, closest_edge(point, edges)) ** 2
     points2edges /= len(points)
+    # print("points->edges error: ", points2edges)
 
     vertices2points = 0
     for edge in edges:
-        v1, v2 = edge
-        m = ((v1[0] + v2[0])/2 , (v1[1] + v2[1]))
+        (x1, y1), (x2, y2) = edge
+        m = ((x1 +x2)/2 , (y1 + y2)/2)
+        # print("current edge: ", edge)
+        # print("Lendpoint dist: ", closest_point((x1, y1), points)[1])
+        # print("midpoint dist: ", closest_point(m, points)[1])
+        # print("Rendpoint dist: ", closest_point((x2, y2), points)[1])
         vertices2points = vertices2points \
-                + closest_point(v1, points)[1] ** 2 \
-                + closest_point(v2, points)[1] ** 2 \
+                + closest_point((x1, y1), points)[1] ** 2 \
+                + closest_point((x2, y2), points)[1] ** 2 \
                 + closest_point(m, points)[1] ** 2
     vertices2points *= REGULARIZATION_CONST
     vertices2points /= 3 * len(edges)
+    # print("vertices->points error:",  vertices2points)
 
-    return (points2edges + vertices2points) / (r*r*gamma)
+    return (points2edges + vertices2points) #/ (r*r*gamma)
 
 
 """Prunes the subgraph to minimize regularized loss"""
 def prune(points, edges, parameters):
+    if len(edges) <= 1:
+        return edges
+
     best_loss = regularized_loss(points, edges, parameters)
     problem_edge = None
     for edge in edges:
@@ -130,8 +145,9 @@ def prune(points, edges, parameters):
             best_loss = subgraph_loss
             problem_edge = edge
     if problem_edge is not None:
-        edges = edges.copy().remove(problem_edge)
-        prune(points, edges, parameters)
+        edges = edges.copy()
+        edges.remove(problem_edge)
+        return prune(points, edges, parameters)
     else:
         return edges
     
@@ -166,12 +182,29 @@ def gradient_decend(points, graph, parameters):
     
     return x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
 
+"""Returns a random intial parameter bundle"""
+def random_init():
+    x = 41.816 + 0.03 * np.random.rand()
+    y = -71.380 - 0.028 * np.random.rand()
+    theta = 2 * math.pi * np.random.rand()
+    r = 0.008 + 0.008 * np.random.rand()
+    gamma = 0.7 + 0.6 * np.random.rand()
+    return x, y, theta, r, gamma
+
 """For testing"""
 def main():
-    tuple1 = (1, 2)
-    tuple2 = (3, 4)
-    sum = tuple1
-    print(sum)
+    points = []
+    for _ in range(100):
+        points.append((np.random.rand(), np.random.rand()))
+    edges = read_edges("edge_list.txt")
+    parameters = random_init()
+    print(parameters)
+    print(embedding_loss(points, edges, parameters))
+
+    for _ in range(10):
+        parameters = gradient_decend(points, edges, parameters)
+        print(parameters)
+        print(embedding_loss(points, edges, parameters))
 
 if __name__ == "__main__":
     main()
