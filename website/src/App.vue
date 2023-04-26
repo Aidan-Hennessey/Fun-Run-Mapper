@@ -1,0 +1,78 @@
+<template>
+    <div class="main-content">
+        <drawarea v-if="drawing" v-on:draw_state_change="this.drawing = !this.drawing" v-on:points="recieve_points"/>
+        <streets :isdrawing="drawing"/>
+    </div>
+    <toolbar v-on:draw_state_change="this.drawing = !this.drawing"/>
+</template>
+
+<script>
+import mybutton from "./components/mybutton.vue"
+import drawarea from "./components/drawarea/index.vue"
+import streets from "./components/streets/index.vue"
+import toolbar from "./components/toolbar/index.vue"
+
+export default{
+  components: {mybutton,drawarea,streets,toolbar},
+  data() {
+    return {
+      drawing: true,
+      points: null,
+    }
+  },
+  methods: {
+    recieve_points(v) {
+      this.points = v
+      console.log(this.points)
+    }
+  }
+}
+</script>
+
+<style>
+:root {
+  --background-grey: #E6E8EB;
+  --text-grey: #9FA2A9;
+  --blue: #639AF8;
+  --yellow: #ffcc00;
+  --green: #98c379;
+  --yellow: #e5c07b;
+  --dark-yellow: #d19a66;
+  --purple: #c678dd;
+  --aqua: #56b6c2;
+  --red: #E06C75;
+  --black: #000;
+  --white: #fff;
+  --icon-grey: #A1A2A3;
+}
+*{
+  box-sizing: inherit;
+}
+html, body{
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+#app{
+  padding-top: calc(env(safe-area-inset-top) + var(--vert-padding));
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--vert-padding));
+  padding-left: calc(env(safe-area-inset-left) + var(--horizontal-padding));
+  padding-right: calc(env(safe-area-inset-right) + var(--horizontal-padding));
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+.main-content {
+  display: grid;
+  place-items: center;
+  grid-template: 1fr / 1fr;
+  height: 100%;
+  width: 100%;
+}
+.main-content> * {
+  grid-column: 1 / 1;
+  grid-row: 1 / 1;
+}
+</style>
