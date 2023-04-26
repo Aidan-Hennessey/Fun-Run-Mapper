@@ -33,6 +33,13 @@ export default{
         ctx.stroke();
         ctx.closePath();
     },
+    drawpoint(x, y) {
+        const ctx = this.canvas
+        const old_style = ctx.fillStyle
+        ctx.fillStyle = "#FF0000"
+        ctx.fillRect(x-2, y-2, 5, 5)
+        ctx.fillStyle = old_style
+    },
     beginDrawing(e) {
       this.x = e.offsetX;
       this.y = e.offsetY;
@@ -44,13 +51,13 @@ export default{
         this.x = e.offsetX;
         this.y = e.offsetY;
         // draw points
-        if (Math.random() < 0.1) {
-            this.list_of_points.push((this.x, this.y))
-            const ctx = this.canvas
-            const old_style = ctx.fillStyle
-            ctx.fillStyle = "#FF0000"
-            ctx.fillRect(this.x-2,this.y-2,5,5)
-            ctx.fillStyle = old_style
+        if (Math.random() < 0.5) {
+            const c = document.getElementById("drawing-board")
+            const width = c.width
+            const height = c.height
+            this.list_of_points.push([this.x/width, this.y/height])
+
+            this.drawpoint(this.x, this.y)
         }
       }
     },
@@ -85,6 +92,7 @@ export default{
   row-gap: 5px;
   align-items: center;
   justify-content: center;
+  z-index: 1;
 }
 canvas {
     border: 5px solid var(--blue);

@@ -1,7 +1,8 @@
 <template>
     <div class="main-content">
         <drawarea v-if="drawing" v-on:draw_state_change="this.drawing = !this.drawing" v-on:points="recieve_points"/>
-        <streets :isdrawing="drawing"/>
+        <div class="diagonal" v-if="drawing"></div>
+        <streets :isdrawing="drawing" :graph="graph"/>
     </div>
     <toolbar v-on:draw_state_change="this.drawing = !this.drawing"/>
 </template>
@@ -17,6 +18,7 @@ export default{
   data() {
     return {
       drawing: true,
+      graph: [[[15, 20], [32, 21]], [[1,1], [2,2]], [[150, 0], [200, 200]]],
       points: null,
     }
   },
@@ -74,5 +76,16 @@ html, body{
 .main-content> * {
   grid-column: 1 / 1;
   grid-row: 1 / 1;
+}
+.diagonal {
+  height: 100%;
+  width: 100%;
+  /* taken from: https://codepen.io/geebru/pen/EveKYr */
+  background-image: repeating-linear-gradient(-45deg, 
+    #bbb 10px,
+    #bbb 12px,
+    transparent 12px,
+    transparent 20px);
+    z-index: 0;
 }
 </style>
