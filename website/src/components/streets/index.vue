@@ -8,7 +8,7 @@
 
 <script>
 export default{
-  props: ['isdrawing', 'vertices'],
+  props: ['isdrawing', 'vertices', 'edges'],
   data() {
     return {
     }
@@ -80,13 +80,14 @@ export default{
             return [px, py]
     },
     plot_graph() {
-        this.vertices.forEach((p) => {
-
-            const pixels = this.gps2pixels(p)
-            const px = pixels[0]
-            const py = pixels[1]
-
-            this.drawpoint(px,py)
+        this.vertices.forEach((gps) => {
+            const p = this.gps2pixels(gps)
+            this.drawpoint(p[0],p[1])
+        })
+        this.edges.forEach((edge) => {
+            const p = this.gps2pixels(edge.slice(0,2))
+            const q = this.gps2pixels(edge.slice(2,4))
+            this.drawLine(p[0], p[1], q[0], q[1])
         })
     },
   },
