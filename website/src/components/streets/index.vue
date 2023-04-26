@@ -8,7 +8,7 @@
 
 <script>
 export default{
-  props: ['isdrawing', 'graph'],
+  props: ['isdrawing', 'vertices'],
   data() {
     return {
     }
@@ -37,20 +37,7 @@ export default{
         ctx.fillRect(x-1.5, y-1.5, 3, 3)
         ctx.fillStyle = old_style
     },
-    plot_graph() {
-        this.graph.forEach((p) => {
-            // (hy, lx)
-            // |---------|
-            // |         }
-            // |         }
-            // |         }
-            // |         }
-            // ----------- (ly, hx)
-            const ly = 41.813010000000006
-            const lx = -71.4326
-            const hx = -71.3516
-            const hy = 41.85351
-
+    gps2pixels(gps) {
             // if you ever want to nicely recompute ly, lx, hx, hy
             /* const mx = -71.3921 */
             /* const my = 41.83326 */
@@ -67,21 +54,37 @@ export default{
             /* console.log(`const hx = ${hx}`) */
             /* console.log(`const hy = ${hy}`) */
 
+
+            // (hy, lx)
+            // |---------|
+            // |         }
+            // |         }
+            // |         }
+            // |         }
+            // ----------- (ly, hx)
+            const ly = 41.813010000000006
+            const lx = -71.4326
+            const hx = -71.3516
+            const hy = 41.85351
+
             const c = document.getElementById("yoink")
             const canvas_width = c.width
             const canvas_height = c.height
 
             const img_width = hx-lx
             const img_height = hy-ly
-            const y = p[0]
-            const x = p[1]
+            const y = gps[0]
+            const x = gps[1]
             const py = (hy - y) * (canvas_height/img_height)
             const px = (x - lx) * (canvas_width/img_width)
+            return [px, py]
+    },
+    plot_graph() {
+        this.vertices.forEach((p) => {
 
-            // const x1 = 100 * (p[0][0] - lx) / (hx - lx)
-            // const y1 = 100 * (p[0][1] - ly) / (hy - ly)
-            // const x2 = 100 * (p[1][0] - lx) / (hx - lx)
-            // const y2 = 100 * (p[1][1] - ly) / (hy - ly)
+            const pixels = this.gps2pixels(p)
+            const px = pixels[0]
+            const py = pixels[1]
 
             this.drawpoint(px,py)
         })
