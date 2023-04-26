@@ -34,7 +34,7 @@ export default{
 
 <style scoped>
 .container {
-    background-color: var(--green);
+    background-color: var(--aqua);
     position: fixed;
     bottom: 0;
     height: 50px;

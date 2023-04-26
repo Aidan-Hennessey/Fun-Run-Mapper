@@ -34,15 +34,11 @@ export default{
         const ctx = this.canvas
         const old_style = ctx.fillStyle
         ctx.fillStyle = "#FF0000"
-        ctx.fillRect(x-2, y-2, 5, 5)
+        ctx.fillRect(x-1.5, y-1.5, 3, 3)
         ctx.fillStyle = old_style
     },
     plot_graph() {
         this.graph.forEach((p) => {
-            const ly = 41.81345120564301
-            const hy = 41.85366048285386
-            const lx = -71.431
-            const hx = -71.35135212870313
             // (hy, lx)
             // |---------|
             // |         }
@@ -50,6 +46,27 @@ export default{
             // |         }
             // |         }
             // ----------- (ly, hx)
+            const ly = 41.813010000000006
+            const lx = -71.4326
+            const hx = -71.3516
+            const hy = 41.85351
+
+            // if you ever want to nicely recompute ly, lx, hx, hy
+            /* const mx = -71.3921 */
+            /* const my = 41.83326 */
+
+            /* const dx = 0.081 */
+            /* const dy = 0.0405 */
+
+            /* const hy = my + dy/2 */
+            /* const ly = my - dy/2 */
+            /* const hx = mx + dx/2 */
+            /* const lx = mx - dx/2 */
+            /* console.log(`const ly = ${ly}`) */
+            /* console.log(`const lx = ${lx}`) */
+            /* console.log(`const hx = ${hx}`) */
+            /* console.log(`const hy = ${hy}`) */
+
             const c = document.getElementById("yoink")
             const canvas_width = c.width
             const canvas_height = c.height
@@ -66,7 +83,6 @@ export default{
             // const x2 = 100 * (p[1][0] - lx) / (hx - lx)
             // const y2 = 100 * (p[1][1] - ly) / (hy - ly)
 
-            console.log(px,py)
             this.drawpoint(px,py)
         })
     },
@@ -78,7 +94,6 @@ export default{
 
     const width = img.clientWidth
     const height = img.clientHeight
-    console.log(width, height)
 
     c.width = width
     c.height = height
