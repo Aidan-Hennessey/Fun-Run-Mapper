@@ -24,6 +24,8 @@ fname = fname2
 Not actually the euclidian distance, but an easy to compute metric that corresponds pretty well
 Precisely, it is the reciprocal eccentrcity of the ellipse with foci at the endpoints of the edge
 which contains point
+
+NOTE: Distances go from 1 to +infinity, not from 0.
 """
 def point_edge_dist(point, edge):
     p1, p2 = edge
@@ -145,6 +147,7 @@ def closest_edge(point, edges, imageconf):
             closest = edge
     return closest
 
+"""Returns closest point and distance between it and target"""
 def closest_point(target, points):
     closest = None
     closest_distance = math.inf
@@ -153,7 +156,7 @@ def closest_point(target, points):
         if distance < closest_distance:
             closest_distance = distance
             closest = point
-    return closest
+    return closest, closest_distance
 
 """
 Params:
@@ -272,7 +275,7 @@ def main():
     def add_edge(event):
         nonlocal first_point
         coords = pixel2gps((int(event.xdata), int(event.ydata)), corners, imageconf)
-        point = closest_point(coords, points)
+        point, _ = closest_point(coords, points)
         if first_point == None:
             first_point = point
         else:
