@@ -3,6 +3,8 @@ import numpy as np
 """A kd-tree used to find closest points. Written by chat-GPT"""
 class KDTree:
     def __init__(self, points):
+        if isinstance(points, list):
+            points = np.array(points)
         self.tree = self.build_tree(points)
         
     class Node:
@@ -16,8 +18,7 @@ class KDTree:
         if len(points) == 0:
             return None
         
-        k = points.shape[1]
-        axis = depth % k
+        axis = depth % 2
         
         sorted_points = points[points[:, axis].argsort()]
         mid = len(points) // 2
@@ -42,8 +43,7 @@ class KDTree:
                 best_point = node.point
                 best_dist = dist
             
-            k = point.shape[0]
-            axis = depth % k
+            axis = depth % 2
             
             if point[axis] < node.point[axis]:
                 search(node.left, depth + 1)
@@ -55,4 +55,4 @@ class KDTree:
                     search(node.left, depth + 1)
             
         search(self.tree)
-        return best_point
+        return tuple(best_point)

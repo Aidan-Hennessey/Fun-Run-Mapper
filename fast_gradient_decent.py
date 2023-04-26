@@ -1,8 +1,7 @@
 import numpy as np
 import math
 
-from edges import closest_point, read_edges
-from points import read_gps
+from edges import read_edges
 from kd_tree import KDTree
 
 ################ HYPERPARAMETERS ####################
@@ -14,7 +13,6 @@ GAMMA_STEP = 0.000001
 REGULARIZATION_CONST = 0.2
 LEARNING_RATE = 0.1
 HOARDING_FACTOR = 3 # the higher this hyperparam, the less aggressively we'll prune
-
 
 """Return a better parameter bundle """
 def gradient_decend(points, graph, parameters):
@@ -53,7 +51,6 @@ Does so by finding the best subgraph corresponding to the embedding
 and calculates the loss between the points and the subgraph
 """
 def embedding_loss(points, graph, parameters):
-    # embedding (unchanged)
     points = embed(points, parameters)
 
     #setup for image and fast_prune
@@ -62,17 +59,14 @@ def embedding_loss(points, graph, parameters):
     graph_points = edges_as_points(graph, samples_to_parents)
     graph_tree = KDTree(graph_points)
 
-    # image
     img = image(points, graph_tree, samples_to_parents)
 
-    # setup for fast_prune
     image_tree = KDTree(edges_as_points(img, samples_to_parents))
-
-
     subgraph = fast_prune(points, points_tree, img, image_tree, samples_to_parents)
 
-    #regularized loss
-    return regularized_loss(points, subgraph, parameters)
+    subgraph_tree = KDTree(edges_as_points(subgraph, samples_to_parents))
+    return regularized_loss(points, subgraph_tree, samples_to_parents)
+    
 
 """Using a set of points in box-space and a parameter bundle, embeds the points in GPS coords"""
 def embed(points, parameters):
@@ -97,7 +91,7 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
     # calc average distance from points to edges
     points2edges_dist = 0
     for point in points:
-        points2edges_dist += point_to_line_segment_distance(point, closest_edge(point, edges))
+        points2edges_dist += point_to_line_segment_distance(point, samples_to_parents[edges_tree.closest_point(point)])
     points2edges_dist /= len(points)
     # multiply by constant to get threshold
     threshold = HOARDING_FACTOR * points2edges_dist
@@ -106,9 +100,12 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
     for edge in edges:
         v1, v2 = edge
         m = (v1[0] + v2[0]) / 2, (v1[1] + v2[1]) / 2
-        edge_badness = np.max([closest_point(v1, points)[1], \
-                            closest_point(v2, points)[1], \
-                            closest_point(m, points)[1]])
+        v1_neighbor = points_tree.closest_point(v1)
+        v2_neighbor = points_tree.closest_point(v2)
+        m_neighbor = points_tree.closest_point(m)
+        edge_badness = np.max([point_point_dist(v1, v1_neighbor), \
+                            point_point_dist(v2, v2_neighbor), \
+                            point_point_dist(m, m_neighbor)])
         if edge_badness > threshold and len(edges) > 1:
             edges.remove(edge)
     
@@ -155,35 +152,13 @@ def point_to_line_segment_distance(point, edge):
 Calculate the regularized loss of a subgraph and an emedding of points
 MSE of points into edges + k * MSE of vertices into points
 """
-def regularized_loss(points, edges, parameters):
-    _, _, _, r, gamma = parameters
-    
+def regularized_loss(points, edges_tree, samples_to_parents):
     points2edges = 0
     for point in points:
-        # print("current point: ", point)
-        # print("closest edge: ", closest_edge(point, edges))
-        # print("dist: ", point_to_line_segment_distance(point, closest_edge(point, edges)))
-        points2edges += point_to_line_segment_distance(point, closest_edge(point, edges)) ** 2
+        points2edges += point_to_line_segment_distance(point, samples_to_parents[edges_tree.closest_point(point)]) ** 2
     points2edges /= len(points)
-    # print("points->edges error: ", points2edges)
 
-    vertices2points = 0
-    for edge in edges:
-        (x1, y1), (x2, y2) = edge
-        m = ((x1 +x2)/2 , (y1 + y2)/2)
-        # print("current edge: ", edge)
-        # print("Lendpoint dist: ", closest_point((x1, y1), points)[1])
-        # print("midpoint dist: ", closest_point(m, points)[1])
-        # print("Rendpoint dist: ", closest_point((x2, y2), points)[1])
-        vertices2points = vertices2points \
-                + closest_point((x1, y1), points)[1] ** 2 \
-                + closest_point((x2, y2), points)[1] ** 2 \
-                + closest_point(m, points)[1] ** 2
-    vertices2points *= REGULARIZATION_CONST
-    vertices2points /= 3 * len(edges)
-    # print("vertices->points error:",  vertices2points)
-
-    return (points2edges + vertices2points) #/ (r*r*gamma)
+    return points2edges
 
 
 """Prunes the subgraph to minimize regularized loss"""
@@ -224,6 +199,7 @@ def edges_as_points(edges, dict, fineness=10):
     points = []
     for edge in edges:
         points += edge_to_points(edge, dict, fineness)
+    return points
 
 def edge_to_points(edge, dict, fineness):
     (x1, y1), (x2, y2) = edge
@@ -238,11 +214,9 @@ def edge_to_points(edge, dict, fineness):
 """For testing"""
 def main():
     points = []
-    for _ in range(500):
+    for _ in range(1000):
         points.append((np.random.rand(), np.random.rand()))
     edges = read_edges("edge_list.txt")
-    edge_points = edges_as_points(edges)
-    edges_tree = KDTree(edge_points)
     parameters = random_init()
 
     print(parameters)

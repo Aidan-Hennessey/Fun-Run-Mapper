@@ -4,7 +4,7 @@ import sys
 
 from points import read_gps
 from edges import read_edges, point_edge_dist
-from gradient_decent import gradient_decend, representative_subgraph, regularized_loss, random_init
+from fast_gradient_decent import gradient_decend, representative_subgraph, regularized_loss, random_init
 
 """
 Reads from stdin a point, graph, and parameter bundle

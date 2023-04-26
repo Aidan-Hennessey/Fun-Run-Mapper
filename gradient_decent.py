@@ -2,7 +2,6 @@ import numpy as np
 import math
 
 from edges import closest_point, read_edges
-from points import read_gps
 
 ################ HYPERPARAMETERS ####################
 XY_STEP = 0.00001
