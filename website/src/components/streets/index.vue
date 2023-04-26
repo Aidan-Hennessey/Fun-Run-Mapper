@@ -1,6 +1,7 @@
 <template>
   <div class="container" id="colors">
-    <img class="the-map" src="@/assets/map.png" alt="map of Providence, RI"/>
+    <img id="the-map" src="@/assets/map.png" alt="map of Providence, RI"/>
+    <div id="hi"></div>
     <canvas id="yoink"></canvas>
   </div>
 </template>
@@ -37,17 +38,54 @@ export default{
         ctx.fillStyle = old_style
     },
     plot_graph() {
-        this.graph.map(p => this.drawLine(p[0][0], p[0][1], p[1][0], p[1][1]))
+        this.graph.forEach((p) => {
+            const ly = 41.81345120564301
+            const hy = 41.85366048285386
+            const lx = -71.431
+            const hx = -71.35135212870313
+            // (hy, lx)
+            // |---------|
+            // |         }
+            // |         }
+            // |         }
+            // |         }
+            // ----------- (ly, hx)
+            const c = document.getElementById("yoink")
+            const canvas_width = c.width
+            const canvas_height = c.height
+
+            const img_width = hx-lx
+            const img_height = hy-ly
+            const y = p[0]
+            const x = p[1]
+            const py = (hy - y) * (canvas_height/img_height)
+            const px = (x - lx) * (canvas_width/img_width)
+
+            // const x1 = 100 * (p[0][0] - lx) / (hx - lx)
+            // const y1 = 100 * (p[0][1] - ly) / (hy - ly)
+            // const x2 = 100 * (p[1][0] - lx) / (hx - lx)
+            // const y2 = 100 * (p[1][1] - ly) / (hy - ly)
+
+            console.log(px,py)
+            this.drawpoint(px,py)
+        })
     },
   },
   mounted() {
     const c = document.getElementById("yoink")
-    // c.style.width = `600px`
-    // c.width = 600
-    // c.style.height = `300px`
-    // c.height = 300
-    this.canvas = c.getContext("2d")
+    const img = document.getElementById("the-map")
+    const rect = c.getBoundingClientRect()
 
+    const width = img.clientWidth
+    const height = img.clientHeight
+    console.log(width, height)
+
+    c.width = width
+    c.height = height
+    c.style.width = width
+    c.style.height = height
+
+    this.canvas = c.getContext("2d")
     this.plot_graph()
   }
 }
@@ -60,23 +98,27 @@ export default{
     z-index: -1;
     overflow: hidden;
 
-    display: grid;
-    place-items: center;
-    grid-template: 1fr / 1fr;
+    position: relative;
     height: 100%;
     width: 100%;
 }
 .container > * {
-  grid-column: 1 / 1;
-  grid-row: 1 / 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    display: block;
+    object-fit: fill;
 }
-#yoink {
+canvas {
+    height: 100%;
+    width: 100%;
+}
+#hi {
     height: 100%;
     width: 100%;
 }
