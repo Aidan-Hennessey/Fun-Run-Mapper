@@ -78,7 +78,7 @@ def embedding_loss(points, graph, parameters):
     subgraph = fast_prune(points, points_tree, img, image_tree, samples_to_parents)
 
     subgraph_tree = KDTree(edges_as_points(subgraph, samples_to_parents))
-    return 1_000_000_000 * regularized_loss(points, subgraph_tree, samples_to_parents)
+    return regularized_loss(points, subgraph_tree, samples_to_parents)
     
 
 """Using a set of points in box-space and a parameter bundle, embeds the points in GPS coords"""
