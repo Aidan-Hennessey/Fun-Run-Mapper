@@ -23,7 +23,7 @@ export default{
     drawLine(x1, y1, x2, y2) {
         let ctx = this.canvas;
         ctx.beginPath();
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = '#c678dd';
         ctx.lineWidth = 1;
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);

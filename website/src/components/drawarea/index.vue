@@ -36,7 +36,7 @@ export default{
     drawpoint(x, y) {
         const ctx = this.canvas
         const old_style = ctx.fillStyle
-        ctx.fillStyle = "#FF0000"
+        ctx.fillStyle = "#639AF8"
         ctx.fillRect(x-2, y-2, 5, 5)
         ctx.fillStyle = old_style
     },
@@ -95,7 +95,7 @@ export default{
   z-index: 1;
 }
 canvas {
-    border: 5px solid var(--blue);
+    border: 5px solid var(--red);
     background-color: #fff;
 }
 </style>
