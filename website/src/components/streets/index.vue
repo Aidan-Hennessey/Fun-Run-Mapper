@@ -23,10 +23,9 @@ export default{
       const ctx = this.canvas
       ctx.clearRect(0, 0, d.width, d.height);
       this.plot_graph()
-      this.points.forEach((gps) => {
-          const p = this.gps2pixels(gps)
-          this.drawpoint(p[0],p[1], "00FF00", 7)
-      })
+      this.draw2(this.points,"00FF00",7)
+      console.log(this.points)
+      console.log(this.vertices)
     }
   },
   methods: {
@@ -46,6 +45,19 @@ export default{
         ctx.fillStyle = color
         ctx.fillRect(x-(size/2), y-(size/2), size, size)
         ctx.fillStyle = old_style
+    },
+    draw2(arr, color = "#FF0000", size = 4) {
+      arr.forEach((gps) => {
+        const p = this.gps2pixels(gps)
+        this.drawpoint(p[0],p[1],color,size)
+      })
+    },
+    draw4(arr) {
+      arr.forEach((edge) => {
+        const p = this.gps2pixels(edge.slice(0,2))
+        const q = this.gps2pixels(edge.slice(2,4))
+        this.drawLine(p[0], p[1], q[0], q[1])
+      })
     },
     gps2pixels(gps) {
             // if you ever want to nicely recompute ly, lx, hx, hy
@@ -90,15 +102,8 @@ export default{
             return [px, py]
     },
     plot_graph() {
-        this.vertices.forEach((gps) => {
-            const p = this.gps2pixels(gps)
-            this.drawpoint(p[0],p[1])
-        })
-        this.edges.forEach((edge) => {
-            const p = this.gps2pixels(edge.slice(0,2))
-            const q = this.gps2pixels(edge.slice(2,4))
-            this.drawLine(p[0], p[1], q[0], q[1])
-        })
+        this.draw2(this.vertices)
+        this.draw4(this.edges)
     },
   },
   mounted() {
