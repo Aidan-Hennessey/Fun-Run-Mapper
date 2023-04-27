@@ -211,6 +211,21 @@ def edge_to_points(edge, dict, fineness):
         dict[(x, y)] = edge
     return points
 
+"""The best subgraph for an embedding"""
+def representative_subgraph(points, graph, parameters):
+    points = embed(points, parameters)
+
+    #setup for image and fast_prune
+    points_tree = KDTree(points)
+    samples_to_parents = {}
+    graph_points = edges_as_points(graph, samples_to_parents)
+    graph_tree = KDTree(graph_points)
+
+    img = image(points, graph_tree, samples_to_parents)
+
+    image_tree = KDTree(edges_as_points(img, samples_to_parents))
+    return fast_prune(points, points_tree, img, image_tree, samples_to_parents)
+
 """For testing"""
 def main():
     points = []
