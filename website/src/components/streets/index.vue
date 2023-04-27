@@ -24,8 +24,6 @@ export default{
       ctx.clearRect(0, 0, d.width, d.height);
       this.plot_graph()
       this.draw2(this.points,"00FF00",7)
-      console.log(this.points)
-      console.log(this.vertices)
     }
   },
   methods: {

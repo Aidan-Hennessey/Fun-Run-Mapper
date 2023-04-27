@@ -157,4 +157,4 @@ def main():
         return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
 
 if __name__ == "__main__":
-    app.run()
+    app.run(threaded=False)
