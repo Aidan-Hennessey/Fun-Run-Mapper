@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="intermediate">
-        <mybutton text="▶ Play"/>
+        <mybutton @click="$emit('play_button_press')" text="▶ Play"/>
         <mybutton @click="$emit('draw_state_change')" text="➕ New"/>
     </div>
     <div class="intermediate">
@@ -20,7 +20,7 @@ import mybutton from "../mybutton.vue"
 
 export default{
   props: ["loss"],
-  emits: ["draw_state_change"],
+  emits: ["draw_state_change", "play_button_press"],
   components: {mybutton},
   data() {
     return {

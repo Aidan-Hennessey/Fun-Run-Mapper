@@ -2,9 +2,9 @@
     <div class="main-content">
         <drawarea v-if="drawing" v-on:draw_state_change="this.drawing = !this.drawing" v-on:points="recieve_points"/>
         <div class="diagonal" v-if="drawing"></div>
-        <streets :isdrawing="drawing" :vertices="graph" :edges="edges" :points="embeded_points"/>
+        <streets :isdrawing="drawing" :vertices="graph" :edges="edges" :points="embeded_points" :subgraph="chosen_subgraph"/>
     </div>
-    <toolbar v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss"/>
+    <toolbar v-on:play_button_press="play_button_press" v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss"/>
 </template>
 
 <script>
@@ -25,6 +25,8 @@ export default{
       points: null,
       loss: null,
       embeded_points: null,
+      chosen_subgraph: null,
+      curr_params: null,
     }
   },
   methods: {
@@ -53,8 +55,7 @@ export default{
       let arr = string.split("\n")
       let n = parseFloat(arr[0])
       for (let i = 1; i < arr.length-1; i++) {
-        let n = arr[i].split(" ")
-        arr[i-1] = [parseFloat(n[0]), parseFloat(n[1])]
+        arr[i-1] = arr[i].split(" ").map(parseFloat)
       }
       arr.pop() // for the 1st element that was overwritten
       arr.pop() // remove blank line from last \n
@@ -68,7 +69,11 @@ export default{
 
       let result = await fetch(this.$host, this.buildrequest("get_init"));
       const params = await result.text()
-
+      this.curr_params = params
+      this.shared_code(params)
+    },
+    // plot things that depend on params
+    async shared_code(params) {
       const pts = this.points2str()
       const edges = this.edges2str() 
 
@@ -78,9 +83,21 @@ export default{
         .then(res => this.loss = res)
 
       str = 'embed_points\n' + pts + '0\n' + params
+      let result = await fetch(this.$host, this.buildrequest(str))
+      this.embeded_points = this.str2arr(await result.text())
+
+      str = 'subgraph\n' + pts + edges + params
       result = await fetch(this.$host, this.buildrequest(str))
-      const data = await result.text()
-      this.embeded_points = this.str2arr(data)
+      this.chosen_subgraph = this.str2arr(await result.text())
+    },
+    async play_button_press() {
+      const pts = this.points2str()
+      const edges = this.edges2str()
+      let str = 'GD_iter\n' + pts + edges + this.curr_params
+      let result = await fetch(this.$host, this.buildrequest(str))
+      const params = await result.text()
+      this.curr_params = params
+      this.shared_code(params)
     }
   }
 }

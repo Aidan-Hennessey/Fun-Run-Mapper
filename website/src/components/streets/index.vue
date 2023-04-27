@@ -8,7 +8,7 @@
 
 <script>
 export default{
-  props: ['isdrawing', 'vertices', 'edges', 'points'],
+  props: ['isdrawing', 'vertices', 'edges', 'points', 'subgraph'],
   data() {
     return {
     }
@@ -23,15 +23,18 @@ export default{
       const ctx = this.canvas
       ctx.clearRect(0, 0, d.width, d.height);
       this.plot_graph()
-      this.draw2(this.points,"00FF00",7)
+      this.draw2(this.points,"#00FF00",7)
+    },
+    subgraph: function() {
+      this.draw4(this.subgraph,"#0000FF",5)
     }
   },
   methods: {
-    drawLine(x1, y1, x2, y2) {
+    drawLine(x1, y1, x2, y2, color = '#c678dd', lineWidth = 1) {
         let ctx = this.canvas;
         ctx.beginPath();
-        ctx.strokeStyle = '#c678dd';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
@@ -50,11 +53,11 @@ export default{
         this.drawpoint(p[0],p[1],color,size)
       })
     },
-    draw4(arr) {
+    draw4(arr, color = '#c678dd', lineWidth = 1) {
       arr.forEach((edge) => {
         const p = this.gps2pixels(edge.slice(0,2))
         const q = this.gps2pixels(edge.slice(2,4))
-        this.drawLine(p[0], p[1], q[0], q[1])
+        this.drawLine(p[0], p[1], q[0], q[1], color, lineWidth)
       })
     },
     gps2pixels(gps) {
