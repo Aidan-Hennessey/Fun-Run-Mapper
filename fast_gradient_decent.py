@@ -187,8 +187,8 @@ def point_point_dist(p1, p2):
 
 """Returns a random intial parameter bundle"""
 def random_init():
-    y = 41.816 + 0.03 * np.random.rand()
-    x = -71.380 - 0.028 * np.random.rand()
+    x = 41.816 + 0.03 * np.random.rand()
+    y = -71.380 - 0.028 * np.random.rand()
     theta = 2 * math.pi * np.random.rand()
     r = 0.008 + 0.008 * np.random.rand()
     gamma = 0.7 + 0.6 * np.random.rand()

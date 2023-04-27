@@ -10,7 +10,7 @@ from points import read_gps
 from edges import read_edges, point_edge_dist
 from kd_tree import KDTree
 from fast_gradient_decent import gradient_decend, representative_subgraph, embed, \
-                                regularized_loss, random_init, edges_as_points
+                                embedding_loss, random_init, edges_as_points
 from fast_gradient_decent import gradient_decend, regularized_loss, random_init
 from gradient_decent import representative_subgraph
 
@@ -85,11 +85,12 @@ interface wrapper for regularized_loss
 NOTE: Edges passed should JUST BE THE SUBGRAPH, NOT THE WHOLE GRAPH
 """
 def loss():
-    points, subgraph, parameters = read_in_data()
-    samples_to_parents = {}
-    subgraph_points = edges_as_points(subgraph, samples_to_parents)
-    subgraph_tree = KDTree(subgraph_points)
-    return str(regularized_loss(points, subgraph_tree, samples_to_parents))
+    points, graph, parameters = read_in_data()
+    return str(embedding_loss(points, graph, parameters))
+    # samples_to_parents = {}
+    # subgraph_points = edges_as_points(subgraph, samples_to_parents)
+    # subgraph_tree = KDTree(subgraph_points)
+    # return str(regularized_loss(points, subgraph_tree, samples_to_parents))
 
 """Interface wrapper for random_init"""
 def get_init():
