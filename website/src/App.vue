@@ -4,7 +4,7 @@
         <div class="diagonal" v-if="drawing"></div>
         <streets :isdrawing="drawing" :vertices="graph" :edges="edges"/>
     </div>
-    <toolbar v-on:draw_state_change="this.drawing = !this.drawing"/>
+    <toolbar v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss"/>
 </template>
 
 <script>
@@ -23,20 +23,55 @@ export default{
       edges: large_arrays.edges,
       graph: large_arrays.verts,
       points: null,
+      loss: null,
     }
   },
   methods: {
-    recieve_points(v) {
-      this.points = v
-      const request = {
+    edges2str() {
+        let str = `${this.edges.length}\n`
+        this.edges.forEach(e => {
+            str += `${e[0]} ${e[1]} ${e[2]} ${e[3]}\n`
+        })
+        return str
+    },
+    points2str() {
+        let str = `${this.points.length}\n`
+        this.points.forEach(p => {
+            str += `${p[0]} ${p[1]}\n`
+        })
+        return str
+    },
+    buildrequest(string) {
+      return {
         headers: {'content-type': 'application/x-www-form-urlencoded'},
-        body: 'full_data=' + encodeURIComponent("loss\n2\n0.1232132 9.932432\n2.432432 0.32432423\n1\n0.123123 43.2342 9.2342323 0.32423\n0.32432\n1.32423\n34.32432\n1.231\n0.9823"),
+        body: 'full_data=' + encodeURIComponent(string),
         method: 'POST',
       }
-      console.log("here")
-      fetch(this.$host, request)
-        .then(res => res.json())
-        .then(res => console.log(res))
+    },
+    str2arr(string) {
+      let arr = string.split("\n")
+      for (let i = 0; i < arr.length; i++) {
+        let n = arr[i].split(" ")
+        arr[i] = [parseFloat(n[0]), parseFloat(n[1])]
+      }
+      console.log(arr)
+      return arr
+    },
+    async recieve_points(v) {
+      this.points = v
+
+      let result = await fetch(this.$host, this.buildrequest("get_init"));
+      const params = await result.text()
+
+      const pts = this.points2str()
+      const edges = this.edges2str() 
+      let str = 'embed_points\n' + pts + '0\n' + params
+
+      result = await fetch(this.$host, this.buildrequest(str))
+      const data = await result.text()
+      console.log(data)
+
+      str = 'loss\n' + pts + edges + params
     }
   }
 }

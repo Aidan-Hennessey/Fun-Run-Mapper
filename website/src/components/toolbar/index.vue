@@ -6,6 +6,7 @@
     </div>
     <div class="intermediate">
         <h1>Miles: -.-</h1>
+        <h1>Loss: {{loss}}</h1>
     </div>
     <div class="intermediate">
         <button @click="nyi">Share</button>
@@ -18,6 +19,7 @@
 import mybutton from "../mybutton.vue"
 
 export default{
+  props: ["loss"],
   emits: ["draw_state_change"],
   components: {mybutton},
   data() {
