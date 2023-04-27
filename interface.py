@@ -97,10 +97,19 @@ def get_init():
     params = random_init()
     return write_param_bundle(params)
 
+"""Transposes each point - sends (a, b) to (b, a)"""
+def flip_points(points):
+    flipped_points = []
+    for point in points:
+        x, y = point
+        flipped_points.append((y, x))
+    return flipped_points
+
 """Interface wrapper for embed"""
 def embed_points():
     points, _, parameters = read_in_data()
     points = embed(points, parameters)
+    points = flip_points(points)
     return write_points(points)
 
 """Converts a set of points to a string to print"""
