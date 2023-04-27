@@ -16,8 +16,8 @@ fname1 = "./ss 1.png"
 corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
 fname2 = "./ss 2.png"
 
-corners = corners2
-fname = fname2
+corners = corners1
+fname = fname1
 """END GLOBALS"""
 
 """

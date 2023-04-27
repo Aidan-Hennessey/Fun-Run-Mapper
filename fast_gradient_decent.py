@@ -12,7 +12,7 @@ GAMMA_STEP = 0.000001
 
 REGULARIZATION_CONST = 0.2
 XY_LEARNING_RATE = 0.5
-THETA_LEARNING_RATE = 50
+THETA_LEARNING_RATE = 500000
 R_LEARNING_RATE = 0.5
 GAMMA_LEARNING_RATE = 5
 HOARDING_FACTOR = 3 # the higher this hyperparam, the less aggressively we'll prune
@@ -27,6 +27,8 @@ def gradient_decend(points, graph, parameters):
     theta_grad *= THETA_LEARNING_RATE
     rgrad *= R_LEARNING_RATE
     gamma_grad *= GAMMA_LEARNING_RATE
+
+    print("change in theta:", theta_grad)
 
     new_x, new_y, new_theta, new_r, new_gamma = x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
 
