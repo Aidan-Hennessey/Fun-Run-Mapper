@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <canvas @mousedown="beginDrawing" @mousemove="keepDrawing" @mouseup="stopDrawing" id="drawing-board"></canvas>
-    <mybutton @click="rec_button_clicked" text="🔴 REC"></mybutton>
+    <mybutton @click="rec_button_clicked" text="✅ Done"></mybutton>
 </div>
 </template>
 
