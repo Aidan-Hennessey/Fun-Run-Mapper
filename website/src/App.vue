@@ -19,7 +19,7 @@ export default{
   components: {mybutton,drawarea,streets,toolbar},
   data() {
     return {
-      drawing: false,
+      drawing: true,
       edges: large_arrays.edges,
       graph: large_arrays.verts,
       points: null,

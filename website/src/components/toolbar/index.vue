@@ -6,7 +6,7 @@
     </div>
     <div class="intermediate">
         <h1>Miles: -.-</h1>
-        <h1>Loss: {{loss}}</h1>
+        <h1 id="loss">Loss: {{Math.round(loss * 1e9) / 100}}</h1>
     </div>
     <div class="intermediate">
         <button @click="nyi">Share</button>
@@ -54,5 +54,8 @@ export default{
 h1 {
     font-size: 18px;
     font-family: inherit;
+}
+#loss {
+    width: 120px;
 }
 </style>
