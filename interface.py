@@ -1,3 +1,4 @@
+from flask import Flask, request
 import math
 import numpy as np
 import sys
@@ -13,7 +14,7 @@ from fast_gradient_decent import gradient_decend, regularized_loss, random_init
 from gradient_decent import representative_subgraph
 
 buffer = ""
-curr_csock = None
+app = Flask(__name__)
 
 """
 Reads from stdin a point, graph, and parameter bundle
@@ -55,30 +56,27 @@ def read_in_data():
 """writes a parameter bundle to stdout"""
 def write_param_bundle(parameters):
     x, y, theta, r, gamma = parameters
-    putline(x)
-    putline(y)
-    putline(theta)
-    putline(r)
-    putline(gamma)
+    return f"{x}\n{y}\n{theta}\n{r}\n{gamma}\n"
 
 """Interface wrapper for gradient_decend"""
 def GD_iter():
     points, graph, parameters = read_in_data()
     improved_bundle = gradient_decend(points, graph, parameters)
-    write_param_bundle(improved_bundle)
+    return write_param_bundle(improved_bundle)
 
 """Writes a list of edges (aka a subgraph) to stdout"""
 def write_edge_list(edges):
-    putline(len(edges))
+    string = f"{len(edges)}\n"
     for edge in edges:
         (a, b), (c, d) = edge
-        putline(a, b, c, d)
+        string += f"{a} {b} {c} {d}\n"
+    return string
 
 """Interface wrapper for representative_subgraph"""
 def subgraph():
     points, graph, parameters = read_in_data()
     subg = representative_subgraph(points, graph, parameters)
-    write_edge_list(subg)
+    return write_edge_list(subg)
 
 """
 interface wrapper for regularized_loss
@@ -89,26 +87,12 @@ def loss():
     samples_to_parents = {}
     subgraph_points = edges_as_points(subgraph, samples_to_parents)
     subgraph_tree = KDTree(subgraph_points)
-    print(regularized_loss(points, subgraph_tree, samples_to_parents))
+    return str(regularized_loss(points, subgraph_tree, samples_to_parents))
 
 """Interface wrapper for random_init"""
 def get_init():
     params = random_init()
-    write_param_bundle(params)
-
-"""Takes a line from the current client socket
-    NOTE: we assume that the client will never hang without closing connection"""
-def getbuffer():
-    global curr_csock
-    if curr_csock == None:
-        raise RuntimeError("client socket is None")
-
-    buffer = curr_csock.recv(1024)
-    msg = buffer
-    while buffer: # connection ended
-        buffer = curr_csock.recv(1024)
-        msg += buffer
-    return msg.decode('utf-8')
+    return write_param_bundle(params)
 
 def getline():
     global buffer
@@ -123,48 +107,27 @@ def getline():
             print(f"[-] bad: got to end of buffer", file=sys.stderr)
         return line
 
-def putline(*args):
-    global curr_csock
-    line = str(args[0]) + reduce(lambda acc,x: acc + ' ' + str(x), args[1:], "") + '\n'
-    if curr_csock == None:
-        raise RuntimeError("client socket is None")
-    return curr_csock.sendall(line.encode('utf-8'))
-
 """
-The REPL the website interacts with
+The route the website interacts with
 """
-def main(ssock):
+@app.route('/', methods=['POST'])
+def main():
     global buffer
-    global curr_csock
+    # we are sending a json with the data as a string in the field 'full_data'
+    buffer = request.form['full_data']
 
-    while True:
-        curr_csock, addr = ssock.accept()
-        print('[+] recieved connection from', *addr)
-        buffer = getbuffer()
-
-        line = getline()
-        if line == "GD_iter":
-            GD_iter()
-        elif line == "subgraph":
-            subgraph()
-        elif line == "loss":
-            loss()
-        elif line == "get_init":
-            get_init()
-        else:
-            print("[-] uh-oh! That's not a recognized function call", file=sys.stderr)
-
-        # client is finished
-        more_client_data = curr_csock.recv(1024)
-        if more_client_data:
-            print(f"[-] bad: client sent extra data: {more_client_data}", file=sys.stderr)
+    line = getline()
+    if line == "GD_iter":
+        return GD_iter()
+    elif line == "subgraph":
+        return subgraph()
+    elif line == "loss":
+        return loss()
+    elif line == "get_init":
+        return get_init()
+    else:
+        print(f"[-] Error: {line} is not a recognized function call", file=sys.stderr)
+        return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
 
 if __name__ == "__main__":
-    HOST = ''     # Symbolic name meaning all available interfaces
-    PORT = 0  # Arbitrary non-privileged port, 0 will find an open port
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ssock:
-        ssock.bind((HOST, PORT))
-        print(f"[+] listening on port {ssock.getsockname()[1]}")
-        ssock.listen()
-        main(ssock)
+    app.run()
