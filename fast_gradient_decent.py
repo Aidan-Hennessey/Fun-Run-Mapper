@@ -101,7 +101,6 @@ def image(points, graph_tree, samples_to_edges):
 
 """Prunes the subgraph in a quick, heuristic way"""
 def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
-    print("Edges before pruning:", len(edges))
     # calc average distance from points to edges
     points2edges_dist = 0
     for point in points:
@@ -109,7 +108,6 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
     points2edges_dist /= len(points)
     # multiply by constant to get threshold
     threshold = HOARDING_FACTOR * points2edges_dist
-    print("threshold:", threshold)
 
     # remove bad edges (a bad edge is one that doesn't stay close to the points)
     for edge in edges:
@@ -124,8 +122,6 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
         if edge_badness > threshold and len(edges) > 1:
             edges.remove(edge)
 
-    print("edges after pruning:",len(edges))
-    
     return edges
 
 """The euclidian distance between a point and an edge. Written by chat GPT"""
@@ -230,7 +226,6 @@ def edge_to_points(edge, dict, fineness):
 
 """The best subgraph for an embedding"""
 def representative_subgraph(points, graph, parameters):
-    print("rep subgraph getting called")
     points = embed(points, parameters)
 
     #setup for image and fast_prune

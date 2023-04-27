@@ -76,9 +76,7 @@ def write_edge_list(edges):
 """Interface wrapper for representative_subgraph"""
 def subgraph():
     points, graph, parameters = read_in_data()
-    print("starting the subgraph calc we care about")
     subg = representative_subgraph(points, graph, parameters)
-    print("subgraph:", subg)
     return write_edge_list(subg)
 
 """
