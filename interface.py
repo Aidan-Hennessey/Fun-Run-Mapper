@@ -9,7 +9,7 @@ from functools import reduce
 from points import read_gps
 from edges import read_edges, point_edge_dist
 from kd_tree import KDTree
-from fast_gradient_decent import gradient_decend, representative_subgraph, \
+from fast_gradient_decent import gradient_decend, representative_subgraph, embed, \
                                 regularized_loss, random_init, edges_as_points
 from fast_gradient_decent import gradient_decend, regularized_loss, random_init
 from gradient_decent import representative_subgraph
@@ -96,6 +96,20 @@ def get_init():
     params = random_init()
     return write_param_bundle(params)
 
+"""Interface wrapper for embed"""
+def embed_points():
+    points, _, parameters = read_in_data()
+    points = embed(points, parameters)
+    return write_points(points)
+
+"""Converts a set of points to a string to print"""
+def write_points(points):
+    string = f"{len(points)}\n"
+    for point in points:
+        x, y = point
+        string += f"{x} {y}\n"
+    return string
+
 def getline():
     global buffer
     split_string = buffer.split('\n', 1)
@@ -127,6 +141,8 @@ def main():
         return loss()
     elif line == "get_init":
         return get_init()
+    elif line == "embed_points":
+        pass
     else:
         print(f"[-] Error: {line} is not a recognized function call", file=sys.stderr)
         return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
