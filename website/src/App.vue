@@ -2,7 +2,7 @@
     <div class="main-content">
         <drawarea v-if="drawing" v-on:draw_state_change="this.drawing = !this.drawing" v-on:points="recieve_points"/>
         <div class="diagonal" v-if="drawing"></div>
-        <streets :isdrawing="drawing" :vertices="graph" :edges="edges"/>
+        <streets :isdrawing="drawing" :vertices="graph" :edges="edges" :points="embeded_points"/>
     </div>
     <toolbar v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss"/>
 </template>
@@ -24,6 +24,7 @@ export default{
       graph: large_arrays.verts,
       points: null,
       loss: null,
+      embeded_points: null,
     }
   },
   methods: {
@@ -50,11 +51,16 @@ export default{
     },
     str2arr(string) {
       let arr = string.split("\n")
-      for (let i = 0; i < arr.length; i++) {
+      let n = parseFloat(arr[0])
+      for (let i = 1; i < arr.length-1; i++) {
         let n = arr[i].split(" ")
-        arr[i] = [parseFloat(n[0]), parseFloat(n[1])]
+        arr[i-1] = [parseFloat(n[0]), parseFloat(n[1])]
       }
-      console.log(arr)
+      arr.pop() // for the 1st element that was overwritten
+      arr.pop() // remove blank line from last \n
+      if (n != arr.length) {
+        console.error("bad things")
+      }
       return arr
     },
     async recieve_points(v) {
@@ -65,13 +71,17 @@ export default{
 
       const pts = this.points2str()
       const edges = this.edges2str() 
-      let str = 'embed_points\n' + pts + '0\n' + params
 
+      let str = 'loss\n' + pts + edges + params
+      fetch(this.$host, this.buildrequest(str))
+        .then(res => res.text())
+        .then(res => this.loss = res)
+
+      str = 'embed_points\n' + pts + '0\n' + params
       result = await fetch(this.$host, this.buildrequest(str))
       const data = await result.text()
-      console.log(data)
+      this.embeded_points = this.str2arr(data)
 
-      str = 'loss\n' + pts + edges + params
     }
   }
 }
