@@ -28,17 +28,17 @@ def gradient_decend(points, graph, parameters):
     rgrad *= R_LEARNING_RATE
     gamma_grad *= GAMMA_LEARNING_RATE
 
-    params = x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
+    new_x, new_y, new_theta, new_r, new_gamma = x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
 
     # bound r and gamma to prevent trivial solutions
-    if params[3] < 0.003:
-        params[3] = 0.003
-    if params[4] > 2:
-        params[4] = 2
-    if params[4] < 0.5:
-        params[4] = 0.5
+    if new_r < 0.003:
+        new_r = 0.003
+    if new_gamma > 2:
+        new_gamma = 2
+    if new_gamma < 0.5:
+        new_gamma = 0.5
     
-    return x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
+    return new_x, new_y, new_theta, new_r, new_gamma
 
 """Compute the gradient using finite differences"""
 def gradient(points, graph, parameters):
