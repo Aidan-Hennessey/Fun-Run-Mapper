@@ -142,7 +142,7 @@ def main():
     elif line == "get_init":
         return get_init()
     elif line == "embed_points":
-        embed_points()
+        return embed_points()
     else:
         print(f"[-] Error: {line} is not a recognized function call", file=sys.stderr)
         return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
