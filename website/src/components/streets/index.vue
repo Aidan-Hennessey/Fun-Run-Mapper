@@ -8,7 +8,7 @@
 
 <script>
 export default{
-  props: ['isdrawing', 'vertices', 'edges'],
+  props: ['isdrawing', 'vertices', 'edges', 'points'],
   data() {
     return {
     }
@@ -17,6 +17,16 @@ export default{
     isdrawing: function() {
       const d = document.getElementById("colors")
       // d.style.backgroundColor = this.isdrawing ? "var(--red)" : "var(--blue)"
+    },
+    points: function() {
+      const d = document.getElementById("yoink")
+      const ctx = this.canvas
+      ctx.clearRect(0, 0, d.width, d.height);
+      this.plot_graph()
+      this.points.forEach((gps) => {
+          const p = this.gps2pixels(gps)
+          this.drawpoint(p[0],p[1], "00FF00", 7)
+      })
     }
   },
   methods: {
@@ -30,11 +40,11 @@ export default{
         ctx.stroke();
         ctx.closePath();
     },
-    drawpoint(x, y) {
+    drawpoint(x, y, color = "#FF0000", size = 4) {
         const ctx = this.canvas
         const old_style = ctx.fillStyle
-        ctx.fillStyle = "#FF0000"
-        ctx.fillRect(x-1.5, y-1.5, 3, 3)
+        ctx.fillStyle = color
+        ctx.fillRect(x-(size/2), y-(size/2), size, size)
         ctx.fillStyle = old_style
     },
     gps2pixels(gps) {

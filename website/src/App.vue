@@ -81,7 +81,6 @@ export default{
       result = await fetch(this.$host, this.buildrequest(str))
       const data = await result.text()
       this.embeded_points = this.str2arr(data)
-
     }
   }
 }
