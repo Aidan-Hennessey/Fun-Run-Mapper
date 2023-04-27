@@ -12,7 +12,6 @@ from kd_tree import KDTree
 from fast_gradient_decent import gradient_decend, representative_subgraph, embed, \
                                 embedding_loss, random_init, edges_as_points
 from fast_gradient_decent import gradient_decend, regularized_loss, random_init
-from gradient_decent import representative_subgraph
 
 buffer = ""
 app = Flask(__name__)
@@ -77,7 +76,9 @@ def write_edge_list(edges):
 """Interface wrapper for representative_subgraph"""
 def subgraph():
     points, graph, parameters = read_in_data()
+    print("starting the subgraph calc we care about")
     subg = representative_subgraph(points, graph, parameters)
+    print("subgraph:", subg)
     return write_edge_list(subg)
 
 """

@@ -11,7 +11,10 @@ R_STEP = 0.000001
 GAMMA_STEP = 0.000001
 
 REGULARIZATION_CONST = 0.2
-LEARNING_RATE = 0.1
+XY_LEARNING_RATE = 0.5
+THETA_LEARNING_RATE = 50
+R_LEARNING_RATE = 0.5
+GAMMA_LEARNING_RATE = 5
 HOARDING_FACTOR = 3 # the higher this hyperparam, the less aggressively we'll prune
 
 """Return a better parameter bundle """
@@ -19,11 +22,21 @@ def gradient_decend(points, graph, parameters):
     x, y, theta, r, gamma = parameters
     xgrad, ygrad, theta_grad, rgrad, gamma_grad = gradient(points, graph, parameters)
 
-    xgrad *= LEARNING_RATE
-    ygrad *= LEARNING_RATE
-    theta_grad *= LEARNING_RATE
-    rgrad *= LEARNING_RATE
-    gamma_grad *= LEARNING_RATE
+    xgrad *= XY_LEARNING_RATE
+    ygrad *= XY_LEARNING_RATE
+    theta_grad *= THETA_LEARNING_RATE
+    rgrad *= R_LEARNING_RATE
+    gamma_grad *= GAMMA_LEARNING_RATE
+
+    params = x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
+
+    # bound r and gamma to prevent trivial solutions
+    if params[3] < 0.003:
+        params[3] = 0.003
+    if params[4] > 2:
+        params[4] = 2
+    if params[4] < 0.5:
+        params[4] = 0.5
     
     return x - xgrad, y - ygrad, theta - theta_grad, r - rgrad, gamma - gamma_grad
 
@@ -88,6 +101,7 @@ def image(points, graph_tree, samples_to_edges):
 
 """Prunes the subgraph in a quick, heuristic way"""
 def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
+    print("Edges before pruning:", len(edges))
     # calc average distance from points to edges
     points2edges_dist = 0
     for point in points:
@@ -95,6 +109,7 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
     points2edges_dist /= len(points)
     # multiply by constant to get threshold
     threshold = HOARDING_FACTOR * points2edges_dist
+    print("threshold:", threshold)
 
     # remove bad edges (a bad edge is one that doesn't stay close to the points)
     for edge in edges:
@@ -108,6 +123,8 @@ def fast_prune(points, points_tree, edges, edges_tree, samples_to_parents):
                             point_point_dist(m, m_neighbor)])
         if edge_badness > threshold and len(edges) > 1:
             edges.remove(edge)
+
+    print("edges after pruning:",len(edges))
     
     return edges
 
@@ -187,8 +204,8 @@ def point_point_dist(p1, p2):
 
 """Returns a random intial parameter bundle"""
 def random_init():
-    x = 41.816 + 0.03 * np.random.rand()
-    y = -71.380 - 0.028 * np.random.rand()
+    x = 41.820 + 0.02 * np.random.rand()
+    y = -71.385 - 0.018 * np.random.rand()
     theta = 2 * math.pi * np.random.rand()
     r = 0.008 + 0.008 * np.random.rand()
     gamma = 0.7 + 0.6 * np.random.rand()
@@ -213,6 +230,7 @@ def edge_to_points(edge, dict, fineness):
 
 """The best subgraph for an embedding"""
 def representative_subgraph(points, graph, parameters):
+    print("rep subgraph getting called")
     points = embed(points, parameters)
 
     #setup for image and fast_prune
