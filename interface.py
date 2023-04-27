@@ -109,7 +109,6 @@ def flip_points(points):
 def embed_points():
     points, _, parameters = read_in_data()
     points = embed(points, parameters)
-    points = flip_points(points)
     return write_points(points)
 
 """Converts a set of points to a string to print"""
