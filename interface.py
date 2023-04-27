@@ -1,4 +1,5 @@
 from flask import Flask, request
+from flask_cors import CORS
 import math
 import numpy as np
 import sys
@@ -15,6 +16,7 @@ from gradient_decent import representative_subgraph
 
 buffer = ""
 app = Flask(__name__)
+CORS(app)
 
 """
 Reads from stdin a point, graph, and parameter bundle

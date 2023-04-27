@@ -28,7 +28,15 @@ export default{
   methods: {
     recieve_points(v) {
       this.points = v
-      console.log(this.points)
+      const request = {
+        headers: {'content-type': 'application/x-www-form-urlencoded'},
+        body: 'full_data=' + encodeURIComponent("loss\n2\n0.1232132 9.932432\n2.432432 0.32432423\n1\n0.123123 43.2342 9.2342323 0.32423\n0.32432\n1.32423\n34.32432\n1.231\n0.9823"),
+        method: 'POST',
+      }
+      console.log("here")
+      fetch(this.$host, request)
+        .then(res => res.json())
+        .then(res => console.log(res))
     }
   }
 }
