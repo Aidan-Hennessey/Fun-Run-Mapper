@@ -156,4 +156,5 @@ def main():
         return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
 
 if __name__ == "__main__":
-    app.run(threaded=False)
+    cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
+    app.run(ssl_context=cert_files, threaded=False, host="0.0.0.0", port=8080)

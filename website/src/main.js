@@ -7,7 +7,6 @@ const app = createApp(App)
 
 // default options config: { expires: '1d', path: '/', domain: '', secure: '', sameSite: 'Lax' }
 // app.use(VueCookies, { expires: '7d'})
-// app.config.globalProperties.$host = "http://sky.jason.cash:8000"
-app.config.globalProperties.$host = "http://127.0.0.1:5000"
+app.config.globalProperties.$host = "https://sky.jason.cash:8080"
 
 app.mount('#app')
