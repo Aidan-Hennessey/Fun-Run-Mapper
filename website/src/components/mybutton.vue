@@ -3,8 +3,6 @@
 </template>
 
 <script>
-import path from "path-browserify";
-
 export default {
     props: ['text', 'icon', 'isactive'],
     computed: {
