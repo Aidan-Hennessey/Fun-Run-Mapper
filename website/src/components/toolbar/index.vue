@@ -47,7 +47,7 @@ export default{
       alert("not implemented")
     },
     tryplay() {
-      if (canplay) {
+      if (this.canplay) {
         this.$emit('play_button_press')
       }
     }
