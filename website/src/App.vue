@@ -4,7 +4,7 @@
         <div class="diagonal" v-if="drawing"></div>
         <streets :isdrawing="drawing" :vertices="graph" :edges="edges" :points="embeded_points" :subgraph="chosen_subgraph"/>
     </div>
-    <toolbar v-on:play_button_press="play_button_press" v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss"/>
+    <toolbar v-on:play_button_press="play_button_press" v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss" :canplay="!drawing && points && curr_params" :isdrawing="drawing"/>
 </template>
 
 <script>

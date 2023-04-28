@@ -1,12 +1,13 @@
 <template>
   <div class="container">
     <canvas @mousedown="beginDrawing" @mousemove="keepDrawing" @mouseup="stopDrawing" id="drawing-board"></canvas>
-    <mybutton @click="rec_button_clicked" text="✅ Done"></mybutton>
+    <mybutton @click="rec_button_clicked" text="Done" :icon="check"></mybutton>
 </div>
 </template>
 
 <script>
 import mybutton from "../mybutton.vue"
+import check from "@/assets/check.svg"
 
 export default{
   emits: ["draw_state_change", "points"],
@@ -18,6 +19,7 @@ export default{
       y: 0,
       canvas: null,
       isPainting: false,
+      check: check,
     }
   },
   // code from https://codepen.io/reiallenramos/pen/MWaEmpw

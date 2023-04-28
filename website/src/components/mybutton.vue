@@ -1,10 +1,17 @@
 <template>
-    <button>{{text}}</button>
+    <button :style="mystyle"><img v-if="icon" :src="icon"/> {{text}}</button>
 </template>
 
 <script>
+import path from "path-browserify";
+
 export default {
-    props: ['text']
+    props: ['text', 'icon', 'isactive'],
+    computed: {
+      mystyle() {
+        return !this.isactive ? "" : "opacity: 50%"
+      }
+    }
 }
 </script>
 
@@ -26,5 +33,8 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+img {
+  height: 12px;
 }
 </style>

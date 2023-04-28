@@ -1,15 +1,15 @@
 <template>
   <div class="container">
     <div class="intermediate">
-        <mybutton @click="$emit('play_button_press')" text="▶ Step"/>
-        <mybutton @click="$emit('draw_state_change')" text="➕ New"/>
+        <mybutton @click="tryplay" text="Step" :icon="play" :isactive="!canplay"/>
+        <mybutton @click="$emit('draw_state_change')" :text="mytext" :icon="myicon"/>
     </div>
     <div class="intermediate">
         <h1>Miles: -.-</h1>
         <h1 id="loss">Loss: {{Math.round(loss * 1e9) / 100}}</h1>
     </div>
     <div class="intermediate">
-        <button @click="nyi">Share</button>
+        <mybutton @click="nyi" text="Share" :icon="share"/>
         <button @click="nyi">?</button>
     </div>
   </div>
@@ -17,18 +17,39 @@
 
 <script>
 import mybutton from "../mybutton.vue"
+import play from "@/assets/play.svg"
+import plus from "@/assets/plus.svg"
+import map from "@/assets/map.svg"
+import share from "@/assets/share.svg"
 
 export default{
-  props: ["loss"],
+  props: ["loss", "canplay", "isdrawing"],
   emits: ["draw_state_change", "play_button_press"],
   components: {mybutton},
   data() {
     return {
+      play: play,
+      plus: plus,
+      map: map,
+      share: share,
+    }
+  },
+  computed: {
+    mytext() {
+      return this.isdrawing ? 'Map' : 'New'
+    },
+    myicon() {
+      return this.isdrawing ? map : plus
     }
   },
   methods: {
     nyi() {
       alert("not implemented")
+    },
+    tryplay() {
+      if (canplay) {
+        this.$emit('play_button_press')
+      }
     }
   },
 }
