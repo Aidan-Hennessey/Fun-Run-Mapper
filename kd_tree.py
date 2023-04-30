@@ -27,6 +27,7 @@ class KDTree:
                           self.build_tree(sorted_points[:mid], depth + 1), 
                           self.build_tree(sorted_points[mid+1:], depth + 1))
         
+    """returns the closest point in the tree to point in logarithmic time"""
     def closest_point(self, point):
         best_point = None
         best_dist = np.inf
@@ -56,3 +57,27 @@ class KDTree:
             
         search(self.tree)
         return tuple(best_point)
+    
+    """
+    returns all points within radius of target. 
+    Worst-case linear but should be prtty good on average
+    It's also impossible to have an alg for this that has worst-case runtime
+    better than linear anyway so I'm happy with this
+    """
+    def query_radius(self, target, radius):
+        results = []
+        self._query_radius(self.tree, target, radius, results)
+        return results
+    
+    def _query_radius(self, node, target, radius, results, depth=0):
+        if node is None:
+            return
+        
+        if np.linalg.norm(node.point - target) <= radius:
+            results.append(node.point)
+        
+        axis = depth % 2
+        if target[axis] - radius < node.point[axis]:
+            self._query_radius(node.left, target, radius, results, depth + 1)
+        if target[axis] + radius > node.point[axis]:
+            self._query_radius(node.right, target, radius, results, depth + 1)
