@@ -126,7 +126,16 @@ def hair_length(tip, graph):
 
 """Removes a hair defined by its tip from the graph"""
 def remove_hair(tip, graph):
-    pass
+    cur_point = tip
+
+    while len(graph[cur_point]) == 1:
+        next_point = graph[cur_point][0]
+        
+        graph[next_point].remove(cur_point)
+        del graph[cur_point]
+
+        # update location
+        cur_point = next_point
 
 """Compresses the drawing representation to one without many edges"""
 def compress(graph):
