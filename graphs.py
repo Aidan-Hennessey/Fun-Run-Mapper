@@ -21,15 +21,17 @@ neighboring vertices. Exceptions include the input to glue, which is a list
 of lists of points, with the understanding that each list corresponds to a 
 path in the natural way (neighboring points in a list are adjacent in graph).
 """
-
+import math
 import numpy as np
-from scipy.spatial.distance import cdist
+from random import shuffle
 
 from kd_tree import KDTree
 from fast_gradient_decent import point_point_dist
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
+IMPORTANCE_THRESH = 0.001
+ANGLE_WEIGHT = 2
 
 """glues paths together into a graph by connecting ends to things if close"""
 def glue(paths):
@@ -48,50 +50,148 @@ def glue(paths):
             if i != last_index:
                 glued_graph[point].append(path[i+1])
 
-    # TODO: solve self-intersections
-
-    # add inter-path connections
+    # glue
     for i in range(len(paths)):
         for j in range(i, len(paths)):
             connections = find_intersections(paths[i], paths[j])
-            # TODO: add in connections
+            if i == j:
+                remove_self_matches(connections)
 
-"""Finds a list of edges that need to be added to glue paths together. Written by chat-GPT."""
-def find_intersections(path1, path2, threshold=GLUE_THRESH):
-    # TODO: edit first section to use KD-trees
-    # Compute pairwise distances between all points in path1 and path2
-    distances = cdist(path1, path2)
+            for con_i, con_j in connections:
+                do_the_glue(glued_graph, paths[i], paths[j], con_i, con_j)
+
+"""
+Glues paths 1 and 2 together using the points at indices i and j
+Mutates graph. Returns nothing.
+"""
+def do_the_glue(graph, path1, path2, i, j):
+    p1 = path1[i]
+    p2 = path2[j]
+
+    # if i or j is endpoint of path, just connect it onto other path
+    if i*j == 0 or i == len(path1) - 1 or j == len(path2) - 1:
+        graph[p1].append(p2)
+        graph[p2].append(p1)
+    else: # stick i in between j and its neighbor
+        neighbor = path2[j-1]
+        graph[neighbor].remove(p2)
+        graph[neighbor].append(p1)
+        graph[p2].remove(neighbor)
+        graph[p2].append(p1)
+        graph[p1].append[p2]
+        graph[p1].append[neighbor]
+
+"""Returns a list of pairs of indices at which some gluing should occur"""                
+def find_intersections(path1, path2, path2KDtree, point2index):
+    intersections = []
+
+    # add every pair within thresh
+    for i, p1 in enumerate(path1):
+        matches = path2KDtree.query_radius(p1, GLUE_THRESH)
+        for match in matches:
+            intersections.append((i, point2index[match]))
     
-    # Find indices of points where distances are below the threshold
-    indices = list(zip(*np.where(distances < threshold)))
+    # replace them all with their corresponding local minima and remove dupes
+    intersections = list(set(map(lambda intrscn: local_min_match(path1, path2, intrscn[0], intrscn[1]), intersections)))
+
+    # remove inferior clones
+    while remove_clone(path1, path2, intersections): # remove_clone returns true when it removes a clone, false when none left
+        pass
+
+    return intersections
+
+"""Given a pair of paths and indices into them, decends to a local optimum, where closer is more optimal"""
+def local_min_match(path1, path2, index1, index2):
+    def local_min_rec(i, j):
+        cur_dist = point_point_dist(path1[i], path2[j])
+        if i != len(path1) - 1 and \
+                point_point_dist(path1[i + 1], path2[j]) < cur_dist:
+            local_min_rec(i + 1, j)
+        if i != 0 and \
+                point_point_dist(path1[i - 1], path2[j]) < cur_dist:
+            local_min_rec(i - 1, j)
+        if j != len(path2) - 1 and \
+                point_point_dist(path1[i], path2[j + 1]) < cur_dist:
+            local_min_rec(i, j + 1)
+        if j != 0 and \
+                point_point_dist(path1[i], path2[j - 1]) < cur_dist:
+            local_min_rec(i, j - 1)
+
+        return i, j
     
-    # Initialize variables to track which points have been included in an event
-    used1 = set()
-    used2 = set()
-    events = []
-    
-    for i, j in indices:
-        # Skip this index pair if one of the points has already been used in an event
-        if i in used1 or j in used2:
-            continue
+    return local_min_rec(index1, index2)
+
+"""
+Searches pairwise until it finds a clone. Removes the worse clone and returns true.
+If no clone is found after searching all pairs, returns false.
+NOTE: The main behavior of this function is to MUTATE the passed intersections list,
+not return a slightly different copy
+
+Params:
+    path1, path2 - the two paths we're trying to glue together
+    intersections - a list of intersections (2tuples of indices) to remove clones from
+Returns:
+    a boolean - true if clone removed, false if no clones found
+"""
+def remove_clone(path1, path2, intersections):
+    for i, intersection1 in enumerate(intersections):
+        for intersection2 in intersections[i+1:]:
+            if clones(path1, path2, intersection1, intersection2):
+                if first_intersection_better(path1, path2, intersection1, intersection2):
+                    intersections.remove(intersection2)
+                else:
+                    intersections.remove(intersection1)
+                return True
+    return False
+
+"""
+Determines whether 2 pairs of points are "clones" in the sense that you can
+obtain one from the other by incrementing indices without ever making the distance
+larger than GLUE_THRESH
+
+NOTE: The correctness of this implementation relies on convexity of clone blobs,
+which may not be valid. Even if wrong in certain pathalogical cases, should be good
+enough
+
+Params:
+    path1, path2 - the two paths on which the pairs lie
+    intersection1 - tuple of indices into each path of the first pair
+    intersection2 - same as intersection1 but second pair
+Returns:
+    boolean - true if clones, false if distinct
+"""
+def clones(path1, path2, intersection1, intersection2):
+    i1, j1 = intersection1
+    i2, j2 = intersection2
+    while True:
+        iinc = math.copysign(1, i1 - i2)
+        jinc = math.copysign(1, j1 - j2)
+        new_i = i2 + iinc
+        new_j = j2 + jinc
+
+        if new_i == i1 and new_j == j1:
+            return True
+        if point_point_dist(path1[new_i], path2[new_j] > GLUE_THRESH):
+            return False
         
-        # Add this pair to the list of events
-        events.append((path1[i], path2[j]))
-        
-        # Mark all adjacent points within the threshold distance as used
-        for ii in range(i, len(path1)):
-            if cdist([path1[ii]], [path2[j]]) < threshold:
-                used1.add(ii)
-            else:
-                break
-        
-        for jj in range(j, len(path2)):
-            if cdist([path1[i]], [path2[jj]]) < threshold:
-                used2.add(jj)
-            else:
-                break
-    
-    return events
+        i2, j2 = new_i, new_j
+
+"""Exactly what it sounds like. Returns true if left has closer dist, else false"""
+def first_intersection_better(path1, path2, intersection1, intersection2):
+    i1p1, i1p2 = path1[intersection1[0]], path2[intersection1[1]]
+    i2p1, i2p2 = path1[intersection2[0]], path2[intersection2[1]]
+    i1_dist = point_point_dist(i1p1, i1p2)
+    i2_dist = point_point_dist(i2p1, i2p2)
+    return i1_dist < i2_dist
+
+"""given a list of intersections, removes trivial ones (point intersecting self)"""
+def remove_self_matches(intersections):
+    i = 0
+    while i < len(intersections):
+        if intersections[i][0] == intersections[i][1]:
+            intersections.pop(i)
+        else:
+            i += 1
 
 """Removes hairs with distance < stubble_thresh"""
 def shave_stubble(graph, threshold=STUBBLE_THRESH):
@@ -142,10 +242,12 @@ def compress(graph):
     points = graph.keys()
     done = False
     while not done:
+        points = shuffle(points)
         for point in points:
             if len(neighbors := graph[point]) == 2:
                 n1, n2 = neighbors
                 if importance(point, n1, n2) < IMPORTANCE_THRESH:
+                    points.remove(point)
                     graph[n1].remove(point)
                     graph[n1].append(n2)
                     graph[n2].remove(point)
@@ -154,4 +256,33 @@ def compress(graph):
                     break
         else:
             done = True
-                
+
+"""
+How important a point is to the structure of drawing graph
+Precondition: point should always be a degree 2 vertex
+"""
+def importance(graph, point):
+    lneighbor = graph[point][0]
+    rneighbor = graph[point][1]
+
+    ldist = point_point_dist(lneighbor, point)
+    rdist = point_point_dist(rneighbor, point)
+    angle = angle_measure(lneighbor, point, rneighbor)
+
+    return angle ** ANGLE_WEIGHT * (ldist + rdist)
+
+"""
+calculates the measure of angle abc in radians
+Adapted from an answer to this stack overflow post:
+https://stackoverflow.com/questions/35176451/python-code-to-calculate-angle-between-three-point-using-their-3d-coordinates
+"""
+def angle_measure(a, b, c):
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(b)
+
+    ba = a - b
+    bc = c - b
+
+    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    return np.arccos(cosine_angle)
