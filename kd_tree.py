@@ -1,6 +1,6 @@
 import numpy as np
 
-"""A kd-tree used to find closest points. Written by chat-GPT"""
+"""A kd-tree used to find closest points. Written (mostly) by chat-GPT"""
 class KDTree:
     def __init__(self, points):
         if isinstance(points, list):
@@ -81,3 +81,59 @@ class KDTree:
             self._query_radius(node.left, target, radius, results, depth + 1)
         if target[axis] + radius > node.point[axis]:
             self._query_radius(node.right, target, radius, results, depth + 1)
+
+    def add(self, point):
+        def insert(node, point, depth):
+            if node is None:
+                return self.Node(point, None, None)
+
+            axis = depth % 2
+
+            if point[axis] < node.point[axis]:
+                node.left = insert(node.left, point, depth + 1)
+            else:
+                node.right = insert(node.right, point, depth + 1)
+
+            return node
+        
+        if not isinstance(point, np.ndarray):
+            point = np.array(point)
+            
+        self.tree = insert(self.tree, point, 0)
+
+    def remove(self, point):
+        if not isinstance(point, np.ndarray):
+            point = np.array(point)
+
+        self.tree = self._remove(self.tree, point)
+        
+    def _remove(self, node, point):        
+        if node is None:
+            return None
+        elif np.array_equal(node.point, point):
+            if node.right:
+                right_min = self._min(node.right, 0)
+                node.point = right_min
+                node.right = self._remove(node.right, right_min)
+                return node
+            else:
+                return node.left
+        elif point[node.depth % 2] < node.point[node.depth % 2]:
+            node.left = self._remove(node.left, point)
+            return node
+        else:
+            node.right = self._remove(node.right, point)
+            return node
+        
+    def _min(self, node, depth):
+        if node is None:
+            return None
+        elif node.left is None:
+            return node.point
+        else:
+            return self._min(node.left, depth + 1)
+        
+    def pop_closest(self, point):
+        closest = self.closest_point(point)
+        self.remove(closest)
+        return tuple(closest)

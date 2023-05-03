@@ -23,10 +23,10 @@ path in the natural way (neighboring points in a list are adjacent in graph).
 """
 import math
 import numpy as np
-from random import shuffle
+import random
 
 from kd_tree import KDTree
-from fast_gradient_decent import point_point_dist
+from fast_gradient_decent import point_point_dist, embed
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
@@ -242,7 +242,7 @@ def compress(graph):
     points = graph.keys()
     done = False
     while not done:
-        points = shuffle(points)
+        points = random.shuffle(points)
         for point in points:
             if len(neighbors := graph[point]) == 2:
                 n1, n2 = neighbors
@@ -286,3 +286,99 @@ def angle_measure(a, b, c):
 
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     return np.arccos(cosine_angle)
+
+"""
+Returns a fully condenced version of the graph (no degree 2 vertices)
+
+TODO: This has a problem. Loops get completely lost bc they have entirely degree 2 vertices
+Can be fixed by going from each fg vertex in each direction until we encounter a 
+non-degree 2 vertex. If the vertex we reach is the one we started from, add 1 or 2
+vertices in the loop
+"""
+def fundemental_graph(graph):
+    graph = graph.copy()
+    points = graph.keys()
+    while not done:
+        points = random.shuffle(points)
+        for point in points:
+            if len(neighbors := graph[point]) == 2:
+                n1, n2 = neighbors
+                points.remove(point)
+                graph[n1].remove(point)
+                graph[n1].append(n2)
+                graph[n2].remove(point)
+                graph[n2].append(n1)
+                del graph[point]
+                break
+        else:
+            done = True
+
+    return graph
+
+"""
+Random walk from start with a bias in end's direction. 
+Terminates upon reaching end or when no new points can be visited.
+Returns none in the latter case
+
+TODO: add momentum - momentum can be initialized based on direction 
+out in compressed graph. Momentum will make the graph way more human
+
+Params:
+    graph - graph of college hill
+    start - start point of the random walk
+    end - end point of the random walk
+Returns:
+    A list of edges detailing the walk in order from start to end
+    None if we get stuck before completing such a walk
+    NOTE: edges are from earlier point to later point, NOT sorted lexicographically.
+    They will need to be passed through sorted() before compared for equality with 
+    edges in the college hill edge list
+"""
+def semi_random_walk(graph, start, end):
+    walk = []
+    visited = [start]
+    current_point = start
+    while current_point != end:
+        targets = graph[current_point]
+        targets = [point for point in targets if point not in visited] # by chat-GPT
+        if len(targets) == 0:
+            return None
+        next_point = softmax_choose(targets, current_point)
+        walk.append((current_point, next_point))
+        current_point = next_point
+    return walk
+
+"""non-deterministically chooses a next point in the biased random walk. Written by chat-GPT"""
+def softmax_choose(points, target):
+    points = np.array(points)
+    target = np.array(target)
+    distances = np.linalg.norm(points - target, axis=1)
+    normalized_distances = (distances - np.min(distances)) / (np.max(distances) - np.min(distances)) + 0.1
+    # ^^ 0.1 is a parameter controlling how much the random walk wanders
+    softmax_vals = np.exp(normalized_distances) / np.sum(np.exp(normalized_distances))
+    return tuple(points[np.random.choice(len(points), p=softmax_vals)])
+
+"""
+Gets a representation of the vertices of the fundemental graph in vertices of the college hill graph
+
+Params:
+    ch_points_tree - a kd tree made from the college hill graph vertices (combined.txt)
+    fg_points - the vertices of the fundemental graph
+"""
+def get_embedding(ch_points_tree, fg_points):
+    embedded_points = embed(fg_points, get_embedding_params())
+    # INJECT points into college hill points
+    injection_image = map(lambda x: ch_points_tree.pop_closest(x), embedded_points)
+    # add back points that we removed
+    map(lambda x: ch_points_tree.add(x), injection_image)
+
+    return injection_image
+
+def get_embedding_params():
+    x = 41.823 + 0.017 * np.random.rand()
+    y = -71.388 - 0.015 * np.random.rand()
+    theta = 2 * math.pi * np.random.rand()
+    r = 0.02 + 0.01 * np.random.rand()
+    gamma = 0.8 + 0.4 * np.random.rand()
+    return x, y, theta, r, gamma
+
