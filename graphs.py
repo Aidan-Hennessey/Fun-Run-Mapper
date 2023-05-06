@@ -1,5 +1,5 @@
 """
-What we need:
+What we originally wanted:
 
 glue - takes segments and glues them into a graph
 
@@ -15,6 +15,14 @@ perturb - perturbs the graph to nearby FG-respecting representation
 
 solve - link everything together in a smart and fast drawing solver
 
+What we actually need:
+
+glue - glues paths together
+
+segmentize - breaks graph up into distinct segments
+
+draw - each segment draws itself a path
+
 NOTE ON GRAPH REPRESENTATION:
 In most cases, graphs are represented as dictionaries mapping from vertices to 
 neighboring vertices. Exceptions include the input to glue, which is a list
@@ -24,14 +32,19 @@ path in the natural way (neighboring points in a list are adjacent in graph).
 import math
 import numpy as np
 import random
+from functools import reduce
 
 from kd_tree import KDTree
 from fast_gradient_decent import point_point_dist, embed
+from segment import Segment
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
 IMPORTANCE_THRESH = 0.001
 ANGLE_WEIGHT = 2
+COMPRESS = False
+
+############################## GLUE SHIT ###################################
 
 """glues paths together into a graph by connecting ends to things if close"""
 def glue(paths):
@@ -59,6 +72,8 @@ def glue(paths):
 
             for con_i, con_j in connections:
                 do_the_glue(glued_graph, paths[i], paths[j], con_i, con_j)
+    
+    return glued_graph
 
 """
 Glues paths 1 and 2 together using the points at indices i and j
@@ -237,6 +252,8 @@ def remove_hair(tip, graph):
         # update location
         cur_point = next_point
 
+########################### NON GLUE SHIT ###################################
+
 """Compresses the drawing representation to one without many edges"""
 def compress(graph):
     points = graph.keys()
@@ -290,12 +307,117 @@ def angle_measure(a, b, c):
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     return np.arccos(cosine_angle)
 
-""""""
+"""
+We have a glued graph. We need to split it into segments so that we can draw each segment.
+This function handles that.
+"""
+def segmentize(glued_graph):
+    segments = []
+
+    critical_vertices = []
+    for vertex in glued_graph.keys():
+        if len(glued_graph[vertex]) != 2:
+            critical_vertices.add(vertex)
+    
+    for vertex in critical_vertices:
+        for neighbor in glued_graph[vertex]:
+            # follow this path
+            last = vertex
+            current = neighbor
+            path = [last, current]
+            while len(neighbors := glued_graph[current]) == 2:
+                if neighbors[0] == last:
+                    next = neighbors[1]
+                else:
+                    next = neighbors[0]
+                path.append(next)
+                last = current
+                current = next
+
+            if current == vertex: # we just traversed a loop
+                # split loop into 2 segments
+                path_len = len(path)
+                segments.append(Segment(path[: path_len // 2 + 1]))
+                segments.append(Segment(path[path_len // 2 :]))
+
+            # so as to avoid double-counting segments
+            # we'll miss a segment if both its endpoints get hashed to the same thing, but nbd
+            if hash(vertex) < hash(current):
+                segments.append(path)
+
+    return segments
 
 """
-Returns a fully condenced version of the graph (very few degree 2 vertices)
+Gets a representation of the vertices of the fundemental graph in vertices of the college hill graph
 
-There's a lot of stuff going on here. Loops are represented
+Params:
+    ch_points_tree - a kd tree made from the college hill graph vertices (combined.txt)
+    fg_points - the vertices of the fundemental graph
+"""
+def get_embedding(ch_points_tree : KDTree, fg_points):
+    embedded_points = embed(fg_points, get_embedding_params())
+    # INJECT points into college hill points
+    injection_image = map(lambda x: ch_points_tree.pop_closest(x), embedded_points)
+    # add back points that we removed
+    map(lambda x: ch_points_tree.add(x), injection_image)
+
+    return injection_image
+
+def get_embedding_params():
+    x = 41.823 + 0.017 * np.random.rand()
+    y = -71.388 - 0.015 * np.random.rand()
+    theta = 2 * math.pi * np.random.rand()
+    r = 0.02 + 0.01 * np.random.rand()
+    gamma = 0.8 + 0.4 * np.random.rand()
+    return x, y, theta, r, gamma
+
+"""
+Given an input edge and output edge, determines the unique gamma=1 bundle
+which could have produced the transformation. Written by chat-GPT.
+
+Params:
+    input - 2 input points
+    output - the embeddings of the 2 points
+Returns:
+    a full parameter bundle: x, y, theta, r, gamma, with gamma guaranteed to be 1
+"""
+def recover_parameters(input, output):
+    input1, input2 = input
+    output1, output2 = output
+
+    # Compute the angle of rotation theta
+    delta_x = input2[0] - input1[0]
+    delta_y = input2[1] - input1[1]
+    theta = math.atan2(delta_y, delta_x) - math.atan2(output2[1] - output1[1], output2[0] - output1[0])
+
+    # Compute the scaling factor r
+    distance_input = math.sqrt(delta_x ** 2 + delta_y ** 2)
+    distance_output = math.sqrt((output2[0] - output1[0]) ** 2 + (output2[1] - output1[1]) ** 2)
+    r = distance_output / distance_input
+
+    # Compute the translation x and y
+    x = output1[0] - r * (input1[0] * math.cos(theta) - input1[1] * math.sin(theta))
+    y = output1[1] - r * (input1[0] * math.sin(theta) + input1[1] * math.cos(theta))
+
+    return x, y, theta, r, 1
+
+"""
+The big guy. Takes in a drawing, represented as a list of paths, and outputs
+an exstravaganza run as a list of edges.
+"""
+def get_subgraph(ch_graph, paths):
+    glued_graph = glue(paths)
+    segments = segmentize(glued_graph)
+    drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
+    return reduce(lambda x, y: x + y, drawn_segments, [])
+
+########################### STUPID USELESS GARBAGE ######################################
+
+"""
+NOTE: BAD! We should not actually use this. Leaving here only bc I might want to reuse pieces
+
+Returns a fully condenced version of the graph (very few degree 2 vertices)
+There's a lot of stuff going on here. Loops are represented, probably poorly
 """
 def fundemental_graph(graph):
     graph = graph.copy()
@@ -360,28 +482,4 @@ def softmax_choose(points, target):
     # ^^ 0.1 is a parameter controlling how much the random walk wanders
     softmax_vals = np.exp(normalized_distances) / np.sum(np.exp(normalized_distances))
     return tuple(points[np.random.choice(len(points), p=softmax_vals)])
-
-"""
-Gets a representation of the vertices of the fundemental graph in vertices of the college hill graph
-
-Params:
-    ch_points_tree - a kd tree made from the college hill graph vertices (combined.txt)
-    fg_points - the vertices of the fundemental graph
-"""
-def get_embedding(ch_points_tree : KDTree, fg_points):
-    embedded_points = embed(fg_points, get_embedding_params())
-    # INJECT points into college hill points
-    injection_image = map(lambda x: ch_points_tree.pop_closest(x), embedded_points)
-    # add back points that we removed
-    map(lambda x: ch_points_tree.add(x), injection_image)
-
-    return injection_image
-
-def get_embedding_params():
-    x = 41.823 + 0.017 * np.random.rand()
-    y = -71.388 - 0.015 * np.random.rand()
-    theta = 2 * math.pi * np.random.rand()
-    r = 0.02 + 0.01 * np.random.rand()
-    gamma = 0.8 + 0.4 * np.random.rand()
-    return x, y, theta, r, gamma
 

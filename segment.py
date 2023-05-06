@@ -6,7 +6,7 @@ from kd_tree import KDTree
 STABILITY = 4 # controls how stringently the walk tries to stick to the path
 
 """
-A segment is path in the drawing connecting two critical points.
+A segment is a path in the drawing connecting two critical points.
 Our algorithm works by identifying critical points, embedding them,
 and then drawing the segments between them on the map.
 Note: segments are immutable (or should at least be treated as such)
@@ -30,16 +30,16 @@ class Segment:
     Returns a list of edges in the graph which form a path from start to end 
     and which resembles the segement in shape
     """
-    def draw(self, graph, start, end) -> list:
+    def draw(self, graph) -> list:
         path = []
         used = set()
-        current = start
-        used.add(start)
-        while current != end:
-            if (next_ := self.__continue_path(current, graph, used)) is not None:
-                path.append((current, next_))
-                used.add(next_)
-                current = next_
+        current = self.path[0]
+        used.add(current)
+        while current != self.path[-1]:
+            if (next := self.__continue_path(current, graph, used)) is not None:
+                path.append((current, next))
+                used.add(next)
+                current = next
             else:
                 return None
         return path
