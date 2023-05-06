@@ -265,6 +265,9 @@ def importance(graph, point):
     lneighbor = graph[point][0]
     rneighbor = graph[point][1]
 
+    if lneighbor == rneighbor:
+        return math.inf
+
     ldist = point_point_dist(lneighbor, point)
     rdist = point_point_dist(rneighbor, point)
     angle = angle_measure(lneighbor, point, rneighbor)
@@ -287,29 +290,29 @@ def angle_measure(a, b, c):
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     return np.arccos(cosine_angle)
 
-"""
-Returns a fully condenced version of the graph (no degree 2 vertices)
+""""""
 
-TODO: This has a problem. Loops get completely lost bc they have entirely degree 2 vertices
-Can be fixed by going from each fg vertex in each direction until we encounter a 
-non-degree 2 vertex. If the vertex we reach is the one we started from, add 1 or 2
-vertices in the loop
+"""
+Returns a fully condenced version of the graph (very few degree 2 vertices)
+
+There's a lot of stuff going on here. Loops are represented
 """
 def fundemental_graph(graph):
     graph = graph.copy()
-    points = graph.keys()
     while not done:
+        points = graph.keys()
         points = random.shuffle(points)
         for point in points:
             if len(neighbors := graph[point]) == 2:
                 n1, n2 = neighbors
-                points.remove(point)
-                graph[n1].remove(point)
-                graph[n1].append(n2)
-                graph[n2].remove(point)
-                graph[n2].append(n1)
-                del graph[point]
-                break
+                if n1 != n2: # this is so that FG has loops working
+                    points.remove(point)
+                    graph[n1].remove(point)
+                    graph[n1].append(n2)
+                    graph[n2].remove(point)
+                    graph[n2].append(n1)
+                    del graph[point]
+                    break
         else:
             done = True
 
@@ -365,7 +368,7 @@ Params:
     ch_points_tree - a kd tree made from the college hill graph vertices (combined.txt)
     fg_points - the vertices of the fundemental graph
 """
-def get_embedding(ch_points_tree, fg_points):
+def get_embedding(ch_points_tree : KDTree, fg_points):
     embedded_points = embed(fg_points, get_embedding_params())
     # INJECT points into college hill points
     injection_image = map(lambda x: ch_points_tree.pop_closest(x), embedded_points)

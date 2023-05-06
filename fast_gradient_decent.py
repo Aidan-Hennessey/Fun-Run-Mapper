@@ -216,10 +216,11 @@ def edges_as_points(edges, dict, fineness=10):
         points += edge_to_points(edge, dict, fineness)
     return points
 
+"""Samples points from an edge. Does not capture either endpoint"""
 def edge_to_points(edge, dict, fineness):
     (x1, y1), (x2, y2) = edge
     points = []
-    for i in range(fineness + 1):
+    for i in range(1, fineness):
         x = x1 + (x2 - x1) * (i / fineness)
         y = y1 + (y2 - y1) * (i / fineness)
         points.append((x, y))

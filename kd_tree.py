@@ -28,7 +28,7 @@ class KDTree:
                           self.build_tree(sorted_points[mid+1:], depth + 1))
         
     """returns the closest point in the tree to point in logarithmic time"""
-    def closest_point(self, point):
+    def closest_point(self, point) -> tuple[float]:
         best_point = None
         best_dist = np.inf
         
@@ -64,12 +64,12 @@ class KDTree:
     It's also impossible to have an alg for this that has worst-case runtime
     better than linear anyway so I'm happy with this
     """
-    def query_radius(self, target, radius):
+    def query_radius(self, target, radius) -> list:
         results = []
-        self._query_radius(self.tree, target, radius, results)
+        self.__query_radius(self.tree, target, radius, results)
         return results
     
-    def _query_radius(self, node, target, radius, results, depth=0):
+    def __query_radius(self, node, target, radius, results, depth=0):
         if node is None:
             return
         
@@ -78,11 +78,11 @@ class KDTree:
         
         axis = depth % 2
         if target[axis] - radius < node.point[axis]:
-            self._query_radius(node.left, target, radius, results, depth + 1)
+            self.__query_radius(node.left, target, radius, results, depth + 1)
         if target[axis] + radius > node.point[axis]:
-            self._query_radius(node.right, target, radius, results, depth + 1)
+            self.__query_radius(node.right, target, radius, results, depth + 1)
 
-    def add(self, point):
+    def add(self, point) -> None:
         def insert(node, point, depth):
             if node is None:
                 return self.Node(point, None, None)
@@ -101,39 +101,39 @@ class KDTree:
             
         self.tree = insert(self.tree, point, 0)
 
-    def remove(self, point):
+    def remove(self, point) -> None:
         if not isinstance(point, np.ndarray):
             point = np.array(point)
 
-        self.tree = self._remove(self.tree, point)
+        self.tree = self.__remove(self.tree, point)
         
-    def _remove(self, node, point):        
+    def __remove(self, node, point):        
         if node is None:
             return None
         elif np.array_equal(node.point, point):
             if node.right:
-                right_min = self._min(node.right, 0)
+                right_min = self.__min(node.right, 0)
                 node.point = right_min
-                node.right = self._remove(node.right, right_min)
+                node.right = self.__remove(node.right, right_min)
                 return node
             else:
                 return node.left
         elif point[node.depth % 2] < node.point[node.depth % 2]:
-            node.left = self._remove(node.left, point)
+            node.left = self.__remove(node.left, point)
             return node
         else:
-            node.right = self._remove(node.right, point)
+            node.right = self.__remove(node.right, point)
             return node
         
-    def _min(self, node, depth):
+    def __min(self, node, depth):
         if node is None:
             return None
         elif node.left is None:
             return node.point
         else:
-            return self._min(node.left, depth + 1)
+            return self.__min(node.left, depth + 1)
         
-    def pop_closest(self, point):
+    def pop_closest(self, point) -> tuple[float]:
         closest = self.closest_point(point)
         self.remove(closest)
-        return tuple(closest)
+        return closest
