@@ -3,6 +3,8 @@ import math
 
 from edges import closest_point, read_edges
 
+root = "../../"
+
 ################ HYPERPARAMETERS ####################
 XY_STEP = 0.00001
 THETA_STEP = 0.0001
@@ -223,7 +225,7 @@ def main():
     points = []
     for _ in range(500):
         points.append((np.random.rand(), np.random.rand()))
-    edges = read_edges("edge_list.txt")
+    edges = read_edges(f"{root}/data/edge_list.txt")
     parameters = random_init()
 
     print(parameters)

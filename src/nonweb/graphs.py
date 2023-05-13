@@ -32,6 +32,8 @@ from segment import Segment
 from edges import read_edges
 from points import read_gps
 
+root = "../../"
+
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
 IMPORTANCE_THRESH = 0.001
@@ -466,7 +468,7 @@ def get_subgraph(ch_graph, ch_points_tree, paths):
     return reduce(lambda x, y: x + y, drawn_segments, [])
 
 def main():
-    graph = graph_from_edges(read_edges("edge_list.txt"))
+    graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
     points_tree = KDTree(list(graph.keys()))
     drawing = [[(0.5, 0.5), (0.7, 0.7), (0.9, 0.9)], \
                [(0.1, 0.1), (0.1, 0.5), (0.51, 0.51), (0.5, 0.1), (0.11, 0.11)]]

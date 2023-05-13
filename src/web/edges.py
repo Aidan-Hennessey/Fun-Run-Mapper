@@ -8,13 +8,14 @@ import os
 from points import read_gps, plot_point, gps2pixel, pixel2gps
 
 """GLOBALS"""
+root = "../../"
 tol = 0.00001 # float comparison tolerance
 
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
-fname1 = "./ss 1.png"
+fname1 = f"{root}/data/ss 1.png"
 
 corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
-fname2 = "./ss 2.png"
+fname2 = f"{root}/data/ss 2.png"
 
 corners = corners1
 fname = fname1
@@ -238,11 +239,11 @@ def main():
         imageconf = im.shape[1], im.shape[0]
 
     # read in points
-    points = read_gps("combined.txt")
+    points = read_gps(f"{root}/data/combined.txt")
     
     # load edges
-    if os.path.exists("edge_list.txt"):
-        edges = read_edges("edge_list.txt")
+    if os.path.exists(f"{root}/data/edge_list.txt"):
+        edges = read_edges(f"{root}/data/edge_list.txt")
     else:
         # make edge list with nearest neighbors
         edges = griddy_edges(points)
@@ -291,8 +292,8 @@ def main():
     plot_with_action(im, points, edges, imageconf, title="result graph")
 
     ############### SAVE UPDATES ###############
-    write_points_to_file(points, "combined.txt")
-    write_edges_to_file(edges, "edge_list.txt")
+    write_points_to_file(points, f"{root}/data/combined.txt")
+    write_edges_to_file(edges, f"{root}/data/edge_list.txt")
 
 
 if __name__ == "__main__":

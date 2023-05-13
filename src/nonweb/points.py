@@ -22,11 +22,13 @@ from matplotlib.widgets import Slider, Button
 # imageconf is tuple (width, height)
 
 """GLOBALS"""
+root = "../../"
+
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
-fname1 = "./ss 1.png"
+fname1 = f"{root}/data/ss 1.png"
 
 corners2 = ((41.848696763227515, -71.41241538461539), (41.8333626547619, -71.37795461538461))
-fname2 = "./ss 2.png"
+fname2 = f"{root}/data/ss 2.png"
 
 corners = corners2
 fname = fname2
@@ -125,7 +127,7 @@ def main():
         im = np.asarray(im)[:, :, :3]
         imageconf = im.shape[1], im.shape[0]
 
-    data = read_gps("./combined.txt")
+    data = read_gps(f"{root}/data/combined.txt")
     new_arr = im
     for pt in data:
         px, py = gps2pixel(pt, corners, imageconf)
