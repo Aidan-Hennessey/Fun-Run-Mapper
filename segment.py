@@ -13,6 +13,8 @@ Note: segments are immutable (or should at least be treated as such)
 """
 class Segment:
     def __init__(self, path) -> None:
+        # TODO: Make this take a start and end and do a proper embedding
+
         self.path = path
         self.size = point_point_dist(path[0], path[-1])
         self.edges = self.__edges_from_path()
@@ -23,7 +25,7 @@ class Segment:
     def __edges_from_path(self):
         edges = []
         for i in range(len(self.path) - 1):
-            edges.append(self.path[i], self.path[i+1])
+            edges.append((self.path[i], self.path[i+1]))
         return edges
 
     """

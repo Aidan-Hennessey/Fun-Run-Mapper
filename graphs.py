@@ -2,25 +2,17 @@
 What we originally wanted:
 
 glue - takes segments and glues them into a graph
-
 compress - compresses drawing graph by curvature
-
 fundemental_graph - condences all the way down (leaving no degree 2 vertices)
-
 represent - creates a drawing representation that respects the fundemental graph
-
 loss - a measure of loss between the condensed graph and the representation
-
 perturb - perturbs the graph to nearby FG-respecting representation
-
 solve - link everything together in a smart and fast drawing solver
 
 What we actually need:
 
 glue - glues paths together
-
 segmentize - breaks graph up into distinct segments
-
 draw - each segment draws itself a path
 
 NOTE ON GRAPH REPRESENTATION:
@@ -37,6 +29,7 @@ from functools import reduce
 from kd_tree import KDTree
 from fast_gradient_decent import point_point_dist, embed
 from segment import Segment
+from edges import read_edges
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
@@ -49,6 +42,14 @@ COMPRESS = False
 """glues paths together into a graph by connecting ends to things if close"""
 def glue(paths):
     glued_graph = {}
+
+    kdtrees = list(map(lambda x: KDTree(x), paths))
+    points_to_indices = []
+    for path in paths:
+        path_dict = {}
+        points_to_indices.append(path_dict)
+        for i, point in enumerate(path):
+            path_dict[point] = i
 
     # add intra-path connections
     for path in paths:
@@ -66,7 +67,7 @@ def glue(paths):
     # glue
     for i in range(len(paths)):
         for j in range(i, len(paths)):
-            connections = find_intersections(paths[i], paths[j])
+            connections = find_intersections(paths[i], paths[j], kdtrees[j], points_to_indices[j])
             if i == j:
                 remove_self_matches(connections)
 
@@ -97,14 +98,14 @@ def do_the_glue(graph, path1, path2, i, j):
         graph[p1].append[neighbor]
 
 """Returns a list of pairs of indices at which some gluing should occur"""                
-def find_intersections(path1, path2, path2KDtree, point2index):
+def find_intersections(path1, path2, path2KDtree : KDTree, point2index : dict):
     intersections = []
 
     # add every pair within thresh
     for i, p1 in enumerate(path1):
         matches = path2KDtree.query_radius(p1, GLUE_THRESH)
         for match in matches:
-            intersections.append((i, point2index[match]))
+            intersections.append((i, j := point2index[tuple(match)]))
     
     # replace them all with their corresponding local minima and remove dupes
     intersections = list(set(map(lambda intrscn: local_min_match(path1, path2, intrscn[0], intrscn[1]), intersections)))
@@ -175,18 +176,36 @@ Params:
 Returns:
     boolean - true if clones, false if distinct
 """
-def clones(path1, path2, intersection1, intersection2):
+def clones(path1, path2, intersection1 : tuple[int, int], intersection2 : tuple[int, int]):
     i1, j1 = intersection1
     i2, j2 = intersection2
+
+    assert(i1 >= 0 and i1 < len(path1))
+    assert(i2 >= 0 and i2 < len(path1))
+    assert(j1 >= 0 and j1 < len(path2))
+    assert(j2 >= 0 and j2 < len(path2))
+
     while True:
-        iinc = math.copysign(1, i1 - i2)
-        jinc = math.copysign(1, j1 - j2)
+        if i2 > i1:
+            iinc = -1
+        elif i2 == i1:
+            iinc = 0
+        else:
+            iinc = 1
+
+        if j2 > j1:
+            jinc = -1
+        elif j2 == j1:
+            jinc = 0
+        else:
+            jinc = 1
+
         new_i = i2 + iinc
         new_j = j2 + jinc
 
         if new_i == i1 and new_j == j1:
             return True
-        if point_point_dist(path1[new_i], path2[new_j] > GLUE_THRESH):
+        if point_point_dist(path1[new_i], path2[new_j]) > GLUE_THRESH:
             return False
         
         i2, j2 = new_i, new_j
@@ -311,13 +330,15 @@ def angle_measure(a, b, c):
 We have a glued graph. We need to split it into segments so that we can draw each segment.
 This function handles that.
 """
-def segmentize(glued_graph):
+def segmentize(glued_graph) -> list[Segment]:
     segments = []
 
-    critical_vertices = []
+    critical_vertices = set()
     for vertex in glued_graph.keys():
         if len(glued_graph[vertex]) != 2:
             critical_vertices.add(vertex)
+
+    # TODO: Embed critical vertices
     
     for vertex in critical_vertices:
         for neighbor in glued_graph[vertex]:
@@ -334,6 +355,9 @@ def segmentize(glued_graph):
                 last = current
                 current = next
 
+            # (vertex, current) are endpoints
+            # TODO: Recover params and embed path
+
             if current == vertex: # we just traversed a loop
                 # split loop into 2 segments
                 path_len = len(path)
@@ -342,8 +366,8 @@ def segmentize(glued_graph):
 
             # so as to avoid double-counting segments
             # we'll miss a segment if both its endpoints get hashed to the same thing, but nbd
-            if hash(vertex) < hash(current):
-                segments.append(path)
+            if hash(tuple(vertex)) < hash(tuple(current)):
+                segments.append(Segment(path))
 
     return segments
 
@@ -401,6 +425,21 @@ def recover_parameters(input, output):
 
     return x, y, theta, r, 1
 
+"""given a list of edges, constructs a dictionary graph"""
+def graph_from_edges(edges):
+    graph = {}
+    for edge in edges:
+        p1, p2 = edge
+        if p1 not in graph:
+            graph[p1] = []
+        if p2 not in graph:
+            graph[p2] = []
+
+        graph[p1].append(p2)
+        graph[p2].append(p1)
+
+    return graph
+
 """
 The big guy. Takes in a drawing, represented as a list of paths, and outputs
 an exstravaganza run as a list of edges.
@@ -410,6 +449,17 @@ def get_subgraph(ch_graph, paths):
     segments = segmentize(glued_graph)
     drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
     return reduce(lambda x, y: x + y, drawn_segments, [])
+
+def main():
+    graph = graph_from_edges(read_edges("edge_list.txt"))
+    drawing = [[(0.5, 0.5), (0.7, 0.7), (0.9, 0.9)], \
+               [(0.1, 0.1), (0.1, 0.5), (0.51, 0.51), (0.5, 0.1), (0.11, 0.11)]]
+    
+    subgraph = get_subgraph(graph, drawing)
+    print(subgraph)
+
+if __name__ == "__main__":
+    main()  
 
 ########################### STUPID USELESS GARBAGE ######################################
 
@@ -482,4 +532,3 @@ def softmax_choose(points, target):
     # ^^ 0.1 is a parameter controlling how much the random walk wanders
     softmax_vals = np.exp(normalized_distances) / np.sum(np.exp(normalized_distances))
     return tuple(points[np.random.choice(len(points), p=softmax_vals)])
-
