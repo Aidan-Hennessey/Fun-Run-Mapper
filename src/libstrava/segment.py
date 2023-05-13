@@ -1,4 +1,6 @@
 import numpy as np
+import heapq
+import math
 
 from fast_gradient_decent import edges_as_points, point_point_dist
 from kd_tree import KDTree
@@ -41,8 +43,8 @@ class Segment:
                 used.add(next)
                 current = next
             else:
-                print("No path found")
-                return []
+                print("No path found; finishing with A*")
+                return self.finish(path, graph)
         print("path found :)")
         return path
                 
@@ -74,3 +76,84 @@ class Segment:
         progress_vec = (edge_end - edge_start) / point_point_dist(edge_start, edge_end)
 
         return STABILITY * correction_vec + progress_vec
+    
+    """Takes a partially-drawn path and finishes it with A*"""
+    def finish(self, path, graph) -> list:
+        # find the closest point in path to end
+        end = self.path[-1]
+        closest_dist = math.inf
+        for i, point in enumerate(path):
+            if (new_dist := point_point_dist(point, end)) < closest_dist:
+                closest_dist = new_dist
+                closest_index = i
+        
+        # do A* from closest point to end
+        return path[:i] + self.a_star(graph, start=path[i])
+
+    """
+    Computes a path connecting this segment's endpoints without regard for the 
+    shape of the segment. In particular, implements A* algorithm. Written by chat-GPT.
+
+    Params: graph is the graph of college hill in dict of neighbors form
+    Returns: a list of edges giving a directish path between the segment endpoints
+    """
+    def a_star(self, graph, start=None):
+        if start == None:
+            start = self.path[0]
+        end = self.path[-1]
+        # Open set to keep track of nodes to be explored
+        open_set = []
+        # Set to store visited nodes
+        closed_set = set()
+        # Dictionary to store the node the current node came from
+        came_from = {}
+        # Dictionary to store the cost of reaching a node from the start node
+        g_score = {start: 0}
+        # Dictionary to store the estimated total cost of reaching the end node from the start node
+        f_score = {start: point_point_dist(start, end)}
+
+        # Push the start node into the open set with its estimated total cost
+        heapq.heappush(open_set, (f_score[start], start))
+
+        while open_set:
+            # Pop the node with the lowest total cost from the open set
+            current = heapq.heappop(open_set)[1]
+
+            # Check if the current node is the end node
+            if current == end:
+                # Path found, reconstruct and return the path
+                return self.__reconstruct_path(came_from, current)
+
+            # Add the current node to the closed set
+            closed_set.add(current)
+
+            # Explore the neighbors of the current node
+            for neighbor in graph[current]:
+                # Calculate the tentative cost to reach the neighbor from the start node
+                tentative_g_score = g_score[current] + graph[current][neighbor]
+
+                if neighbor in closed_set and tentative_g_score >= g_score.get(neighbor, float('inf')):
+                    # Ignore this neighbor if it has already been visited and a better path has been found
+                    continue
+
+                if tentative_g_score < g_score.get(neighbor, float('inf')):
+                    # Update the best path to reach the neighbor
+                    came_from[neighbor] = current
+                    # Update the cost to reach the neighbor from the start node
+                    g_score[neighbor] = tentative_g_score
+                    # Update the estimated total cost of reaching the end node from the start node
+                    f_score[neighbor] = tentative_g_score + point_point_dist(neighbor, end)
+                    if neighbor not in closed_set:
+                        # Add the neighbor to the open set if it hasn't been visited yet
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+        # No path found
+        return None
+
+    """Reconstructs the path from the start node to the current node"""
+    def __reconstruct_path(self, came_from, current):
+        path = []
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+        return path[::-1]

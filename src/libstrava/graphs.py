@@ -32,7 +32,7 @@ from segment import Segment
 from edges import read_edges
 from points import read_gps
 
-root = "../../"
+root = "../.."
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
