@@ -88,7 +88,7 @@ class Segment:
                 closest_index = i
         
         # do A* from closest point to end
-        return path[:i] + self.a_star(graph, start=path[i])
+        return path[:closest_index] + self.a_star(graph, start=path[closest_index])
 
     """
     Computes a path connecting this segment's endpoints without regard for the 

@@ -14,7 +14,7 @@ from libstrava import gradient_decend, representative_subgraph, embed, \
 from libstrava import gradient_decend, regularized_loss, random_init
 from libstrava import get_subgraph
 
-root = "../"
+root = ""
 buffer = ""
 app = Flask(__name__)
 CORS(app)
