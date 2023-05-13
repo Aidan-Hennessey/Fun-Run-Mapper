@@ -2,7 +2,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import ssl
 
 from os import chdir
-chdir("./website/dist/")
+chdir("../../website/dist/")
 
 PORT = 8000
 
