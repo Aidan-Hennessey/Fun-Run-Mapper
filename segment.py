@@ -13,8 +13,6 @@ Note: segments are immutable (or should at least be treated as such)
 """
 class Segment:
     def __init__(self, path) -> None:
-        # TODO: Make this take a start and end and do a proper embedding
-
         self.path = path
         self.size = point_point_dist(path[0], path[-1])
         self.edges = self.__edges_from_path()
@@ -43,7 +41,9 @@ class Segment:
                 used.add(next)
                 current = next
             else:
-                return None
+                print("No path found")
+                return []
+        print("path found :)")
         return path
                 
     """returns the best next step in the drawing, or None if we should give up"""

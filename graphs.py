@@ -30,6 +30,7 @@ from kd_tree import KDTree
 from fast_gradient_decent import point_point_dist, embed
 from segment import Segment
 from edges import read_edges
+from points import read_gps
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
@@ -330,15 +331,16 @@ def angle_measure(a, b, c):
 We have a glued graph. We need to split it into segments so that we can draw each segment.
 This function handles that.
 """
-def segmentize(glued_graph) -> list[Segment]:
+def segmentize(glued_graph, ch_points_tree : KDTree) -> list[Segment]:
     segments = []
 
     critical_vertices = set()
     for vertex in glued_graph.keys():
         if len(glued_graph[vertex]) != 2:
             critical_vertices.add(vertex)
+    critical_vertices = list(critical_vertices)
 
-    # TODO: Embed critical vertices
+    embeddings = {k : v for (k, v) in zip(critical_vertices, get_embedding(ch_points_tree, list(critical_vertices)), strict=True)}
     
     for vertex in critical_vertices:
         for neighbor in glued_graph[vertex]:
@@ -356,11 +358,24 @@ def segmentize(glued_graph) -> list[Segment]:
                 current = next
 
             # (vertex, current) are endpoints
-            # TODO: Recover params and embed path
+            embedded_endpoints = (embeddings[vertex], embeddings[current])
+            params = recover_parameters((vertex, current), embedded_endpoints)
+
+            path = embed(path, params)
+
+            # ensure endpoints exactly match graph intersections
+            path[0] = embeddings[vertex]
+            path[-1] = embeddings[current]
 
             if current == vertex: # we just traversed a loop
                 # split loop into 2 segments
                 path_len = len(path)
+                
+                # ensure endpoints of split segments are intersections on graph
+                break_point = path[path_len // 2]
+                break_point = ch_points_tree.closest_point(break_point)
+                path[path_len // 2] = break_point
+
                 segments.append(Segment(path[: path_len // 2 + 1]))
                 segments.append(Segment(path[path_len // 2 :]))
 
@@ -380,19 +395,19 @@ Params:
 """
 def get_embedding(ch_points_tree : KDTree, fg_points):
     embedded_points = embed(fg_points, get_embedding_params())
-    # INJECT points into college hill points
-    injection_image = map(lambda x: ch_points_tree.pop_closest(x), embedded_points)
+    # map points into college hill points
+    map_image = map(lambda x: ch_points_tree.closest_point(x), embedded_points)
     # add back points that we removed
-    map(lambda x: ch_points_tree.add(x), injection_image)
+    # map(lambda x: ch_points_tree.add(x), injection_image) <- used when injecting
 
-    return injection_image
+    return list(map_image)
 
 def get_embedding_params():
-    x = 41.823 + 0.017 * np.random.rand()
-    y = -71.388 - 0.015 * np.random.rand()
-    theta = 2 * math.pi * np.random.rand()
-    r = 0.02 + 0.01 * np.random.rand()
-    gamma = 0.8 + 0.4 * np.random.rand()
+    x = 41.823 #+ 0.017 * np.random.rand()
+    y = -71.388 #- 0.015 * np.random.rand()
+    theta = 0#2 * math.pi * np.random.rand()
+    r = 0.005 #+ 0.01 * np.random.rand()
+    gamma = 1#0.8 + 0.4 * np.random.rand()
     return x, y, theta, r, gamma
 
 """
@@ -444,18 +459,19 @@ def graph_from_edges(edges):
 The big guy. Takes in a drawing, represented as a list of paths, and outputs
 an exstravaganza run as a list of edges.
 """
-def get_subgraph(ch_graph, paths):
+def get_subgraph(ch_graph, ch_points_tree, paths):
     glued_graph = glue(paths)
-    segments = segmentize(glued_graph)
+    segments = segmentize(glued_graph, ch_points_tree)
     drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
     return reduce(lambda x, y: x + y, drawn_segments, [])
 
 def main():
     graph = graph_from_edges(read_edges("edge_list.txt"))
+    points_tree = KDTree(list(graph.keys()))
     drawing = [[(0.5, 0.5), (0.7, 0.7), (0.9, 0.9)], \
                [(0.1, 0.1), (0.1, 0.5), (0.51, 0.51), (0.5, 0.1), (0.11, 0.11)]]
     
-    subgraph = get_subgraph(graph, drawing)
+    subgraph = get_subgraph(graph, points_tree, drawing)
     print(subgraph)
 
 if __name__ == "__main__":
