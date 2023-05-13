@@ -46,6 +46,7 @@ export default{
       this.x = e.offsetX;
       this.y = e.offsetY;
       this.isPainting = true;
+      this.list_of_points.push(Array())
     },
     keepDrawing(e) {
       if (this.isPainting === true) {
@@ -57,7 +58,7 @@ export default{
             const c = document.getElementById("drawing-board")
             const width = c.width
             const height = c.height
-            this.list_of_points.push([this.x/width, this.y/height])
+            this.list_of_points[this.list_of_points.length-1].push([this.x/width, this.y/height])
 
             this.drawpoint(this.x, this.y)
         }
