@@ -12,7 +12,9 @@ from libstrava import KDTree
 from libstrava import gradient_decend, representative_subgraph, embed, \
                                 embedding_loss, random_init, edges_as_points
 from libstrava import gradient_decend, regularized_loss, random_init
+from libstrava import get_subgraph
 
+root = "../"
 buffer = ""
 app = Flask(__name__)
 CORS(app)
@@ -53,6 +55,24 @@ def read_in_data():
 
     return points, edges, (x, y, theta, r, gamma)
 
+"""
+Reads in a drawing, which will be turned into a list of lists of points,
+where each inner list represents a path the user drew. The drawing data
+itself looks like a series of inner list strings, where each inner list
+string is the length n of the list on a line, then x y on the next n lines
+
+Returns the list of paths
+"""
+def read_in_data_new_api(buffer) -> list[list[tuple[float]]]:
+    paths = []
+    while (path_len := int(getline(buffer))):
+        path = []
+        paths.append([])
+        for _ in range(path_len):
+            x, y = getline(buffer).split()
+            point = float(x), float(y)
+            path.append(point)
+    return paths
 
 """writes a parameter bundle to stdout"""
 def write_param_bundle(parameters):
@@ -78,6 +98,13 @@ def subgraph():
     points, graph, parameters = read_in_data()
     subg = representative_subgraph(points, graph, parameters)
     return write_edge_list(subg)
+
+def subgraph_new_api():
+    graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
+    points_tree = KDTree(list(graph.keys()))
+    paths = read_in_data(buffer)
+    
+    subgraph = get_subgraph(graph, points_tree, paths)
 
 """
 interface wrapper for regularized_loss
@@ -118,7 +145,7 @@ def write_points(points):
         string += f"{x} {y}\n"
     return string
 
-def getline():
+def getline() -> str:
     global buffer
     split_string = buffer.split('\n', 1)
 
@@ -144,7 +171,7 @@ def main():
     if line == "GD_iter":
         return GD_iter()
     elif line == "subgraph":
-        return subgraph()
+        return get_subgraph()
     elif line == "loss":
         return loss()
     elif line == "get_init":
