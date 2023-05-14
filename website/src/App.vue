@@ -38,11 +38,22 @@ export default{
         return str
     },
     points2str() {
+      if (this.$api_v == 1) {
         let str = `${this.points.length}\n`
         this.points.forEach(p => {
             str += `${p[0]} ${p[1]}\n`
         })
         return str
+      } else if (this.$api_v == 2) {
+        let str = ''
+        this.points.forEach(points => {
+          str += `${points.length}\n`
+          points.forEach(p => {
+            str += `${p[0]} ${p[1]}\n`
+          })
+          return str
+        })
+      }
     },
     buildrequest(string) {
       return {
