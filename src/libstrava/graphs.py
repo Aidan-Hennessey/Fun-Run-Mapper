@@ -39,6 +39,7 @@ import math
 import numpy as np
 import random
 from functools import reduce
+import pathlib
 
 from .kd_tree import KDTree
 from .fast_gradient_decent import point_point_dist, embed
@@ -46,7 +47,7 @@ from .segment import Segment
 from .edges import read_edges
 from .points import read_gps
 
-root = "../.."
+root = str(pathlib.Path(__file__).parent.parent.parent)
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04

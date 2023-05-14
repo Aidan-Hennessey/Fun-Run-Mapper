@@ -4,11 +4,12 @@ from PIL import Image
 import numpy as np
 import cv2
 import os
+import pathlib
 
 from .points import read_gps, plot_point, gps2pixel, pixel2gps
 
 """GLOBALS"""
-root = "../../"
+root = str(pathlib.Path(__file__).parent.parent.parent)
 tol = 0.00001 # float comparison tolerance
 
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 from matplotlib.widgets import Slider, Button
+import pathlib
 
 # import matplotlib as mpl
 # mpl.rcParams['figure.figsize'] = [12, 12]
@@ -22,7 +23,7 @@ from matplotlib.widgets import Slider, Button
 # imageconf is tuple (width, height)
 
 """GLOBALS"""
-root = "../../"
+root = str(pathlib.Path(__file__).parent.parent.parent)
 
 corners1 = ((41.837521, -71.413896), (41.817705, -71.371781))
 fname1 = f"{root}/data/ss 1.png"
