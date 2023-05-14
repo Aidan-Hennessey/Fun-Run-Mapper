@@ -69,7 +69,7 @@ def read_in_data_new_api(lines) -> list[list[tuple[float, float]]]:
     paths = []
     while (path_len := int(next(lines))):
         path = []
-        paths.append([])
+        paths.append(path)
         for _ in range(path_len):
             x, y = next(lines).split()
             point = float(x), float(y)
@@ -103,7 +103,7 @@ def subgraph_new_api(paths):
     graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
     points_tree = KDTree(list(graph.keys()))
     
-    subgraph = get_subgraph(graph, points_tree, paths)
+    subgraph = list(set(get_subgraph(graph, points_tree, paths)))
 
 """
 interface wrapper for regularized_loss
