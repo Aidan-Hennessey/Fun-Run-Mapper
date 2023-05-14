@@ -50,7 +50,7 @@ class Segment:
                 print("No path found; finishing with A*")
                 points = [edge[0] for edge in path] # first point in each edge
                 points.append(path[-1][1]) # include very last point
-                return self.finish(points, graph)
+                return self.__finish(points, graph)
         print("path found :)")
         return path
                 
@@ -84,7 +84,7 @@ class Segment:
         return STABILITY * correction_vec + progress_vec
     
     """Takes a partially-drawn path and finishes it with A*"""
-    def finish(self, path, graph) -> list:
+    def __finish(self, path, graph) -> list:
         # find the closest point in path to end
         end = self.path[-1]
         closest_dist = math.inf

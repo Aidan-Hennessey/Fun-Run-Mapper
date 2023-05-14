@@ -1,19 +1,33 @@
 """
-What we originally wanted:
-
-glue - takes segments and glues them into a graph
-compress - compresses drawing graph by curvature
-fundemental_graph - condences all the way down (leaving no degree 2 vertices)
-represent - creates a drawing representation that respects the fundemental graph
-loss - a measure of loss between the condensed graph and the representation
-perturb - perturbs the graph to nearby FG-respecting representation
-solve - link everything together in a smart and fast drawing solver
-
-What we actually need:
-
-glue - glues paths together
-segmentize - breaks graph up into distinct segments
-draw - each segment draws itself a path
+Hirearchy:
+subgraph - generates subgraph from drawing
+    glue - glues paths together
+        find_intersections - finds pairs which are intended to intersect
+            local_min_match - GDs to locally closest pair
+            remove_clones - removes a single clone, as defined below
+                clones - whether 2 intersections can be turned into eachother continously
+                first_intersection_better - pair of "intersecting" points are closer than other
+        remove_self_matches - remove intersections of point with self
+        do_the_glue - edits graph dict to incorporate found intersections
+        shave_stubble - removes short hairs sticking out
+            hair_length - computes length of hair
+            remove_hair - removes hair from graph
+    segmentize - breaks graph up into distinct segments
+        compress - removes "unimportant" vertices to speed up segmentation
+            importance - measured using angle at vertex + distance to neighbors
+                angle_measure - calculates angle at a degree 2 vertex
+        get_embedding - randomly embeds drawing in map
+            get_embedding_params - create random parameter bundle
+        recover_params - calc parameter bundle corresponding to pair of embedded points
+        Segment - 
+            edges_from_path
+    draw - each segment draws itself a path
+        __continue_path - finds best next intersection to move to
+            __alignment - alignment of possible continuation w/ vector field
+                __get_vec - samples vector field w/ which we want to be aligned
+        __finish - finihses attempted draw with A*
+            a_star - connects points in graph
+                __reconstruct_path
 
 NOTE ON GRAPH REPRESENTATION:
 In most cases, graphs are represented as dictionaries mapping from vertices to 
@@ -72,7 +86,8 @@ def glue(paths):
         for j in range(i, len(paths)):
             connections = find_intersections(paths[i], paths[j], kdtrees[j], points_to_indices[j])
             if i == j:
-                remove_self_matches(connections)
+                # removes (i, i) and one of (i, j) and (j, i)
+                connections = remove_self_matches(connections)
 
             for con_i, con_j in connections:
                 do_the_glue(glued_graph, paths[i], paths[j], con_i, con_j)
@@ -221,7 +236,7 @@ def first_intersection_better(path1, path2, intersection1, intersection2):
     i2_dist = point_point_dist(i2p1, i2p2)
     return i1_dist < i2_dist
 
-"""given a list of intersections, removes trivial ones (point intersecting self)"""
+"""given a list of intersections, removes trivial ones and repeats"""
 def remove_self_matches(intersections):
     i = 0
     while i < len(intersections):
@@ -229,6 +244,8 @@ def remove_self_matches(intersections):
             intersections.pop(i)
         else:
             i += 1
+
+    return list(set(sorted(intersections)))
 
 """Removes hairs with distance < stubble_thresh"""
 def shave_stubble(graph, threshold=STUBBLE_THRESH):
@@ -262,7 +279,7 @@ def hair_length(tip, graph):
     return dist
 
 """Removes a hair defined by its tip from the graph"""
-def remove_hair(tip, graph):
+def remove_hair(tip : tuple[float], graph : dict[tuple[float], list[tuple[float]]]) -> None:
     cur_point = tip
 
     while len(graph[cur_point]) == 1:
@@ -274,7 +291,70 @@ def remove_hair(tip, graph):
         # update location
         cur_point = next_point
 
-########################### NON GLUE SHIT ###################################
+########################### END GLUE SHIT ###################################
+############################ SEGMENTIZE #####################################
+
+"""
+We have a glued graph. We need to split it into segments so that we can draw each segment.
+This function handles that.
+"""
+def segmentize(glued_graph, ch_points_tree : KDTree) -> list[Segment]:
+    if COMPRESS:
+        compress(glued_graph)
+
+    segments = []
+
+    critical_vertices = set()
+    for vertex in glued_graph.keys():
+        if len(glued_graph[vertex]) != 2:
+            critical_vertices.add(vertex)
+    critical_vertices = list(critical_vertices)
+
+    embeddings = {k : v for (k, v) in zip(critical_vertices, get_embedding(ch_points_tree, list(critical_vertices)), strict=True)}
+    
+    for vertex in critical_vertices:
+        for neighbor in glued_graph[vertex]:
+            # follow this path
+            last = vertex
+            current = neighbor
+            path = [last, current]
+            while len(neighbors := glued_graph[current]) == 2:
+                if neighbors[0] == last:
+                    next = neighbors[1]
+                else:
+                    next = neighbors[0]
+                path.append(next)
+                last = current
+                current = next
+
+            # (vertex, current) are endpoints
+            embedded_endpoints = (embeddings[vertex], embeddings[current])
+            params = recover_parameters((vertex, current), embedded_endpoints)
+
+            path = embed(path, params)
+
+            # ensure endpoints exactly match graph intersections
+            path[0] = embeddings[vertex]
+            path[-1] = embeddings[current]
+
+            if current == vertex: # we just traversed a loop
+                # split loop into 2 segments
+                path_len = len(path)
+                
+                # ensure endpoints of split segments are intersections on graph
+                break_point = path[path_len // 2]
+                break_point = ch_points_tree.closest_point(break_point)
+                path[path_len // 2] = break_point
+
+                segments.append(Segment(path[: path_len // 2 + 1]))
+                segments.append(Segment(path[path_len // 2 :]))
+
+            # so as to avoid double-counting segments
+            # we'll miss a segment if both its endpoints get hashed to the same thing, but nbd
+            if hash(tuple(vertex)) < hash(tuple(current)):
+                segments.append(Segment(path))
+
+    return segments
 
 """Compresses the drawing representation to one without many edges"""
 def compress(graph):
@@ -330,65 +410,6 @@ def angle_measure(a, b, c):
     return np.arccos(cosine_angle)
 
 """
-We have a glued graph. We need to split it into segments so that we can draw each segment.
-This function handles that.
-"""
-def segmentize(glued_graph, ch_points_tree : KDTree) -> list[Segment]:
-    segments = []
-
-    critical_vertices = set()
-    for vertex in glued_graph.keys():
-        if len(glued_graph[vertex]) != 2:
-            critical_vertices.add(vertex)
-    critical_vertices = list(critical_vertices)
-
-    embeddings = {k : v for (k, v) in zip(critical_vertices, get_embedding(ch_points_tree, list(critical_vertices)), strict=True)}
-    
-    for vertex in critical_vertices:
-        for neighbor in glued_graph[vertex]:
-            # follow this path
-            last = vertex
-            current = neighbor
-            path = [last, current]
-            while len(neighbors := glued_graph[current]) == 2:
-                if neighbors[0] == last:
-                    next = neighbors[1]
-                else:
-                    next = neighbors[0]
-                path.append(next)
-                last = current
-                current = next
-
-            # (vertex, current) are endpoints
-            embedded_endpoints = (embeddings[vertex], embeddings[current])
-            params = recover_parameters((vertex, current), embedded_endpoints)
-
-            path = embed(path, params)
-
-            # ensure endpoints exactly match graph intersections
-            path[0] = embeddings[vertex]
-            path[-1] = embeddings[current]
-
-            if current == vertex: # we just traversed a loop
-                # split loop into 2 segments
-                path_len = len(path)
-                
-                # ensure endpoints of split segments are intersections on graph
-                break_point = path[path_len // 2]
-                break_point = ch_points_tree.closest_point(break_point)
-                path[path_len // 2] = break_point
-
-                segments.append(Segment(path[: path_len // 2 + 1]))
-                segments.append(Segment(path[path_len // 2 :]))
-
-            # so as to avoid double-counting segments
-            # we'll miss a segment if both its endpoints get hashed to the same thing, but nbd
-            if hash(tuple(vertex)) < hash(tuple(current)):
-                segments.append(Segment(path))
-
-    return segments
-
-"""
 Gets a representation of the vertices of the fundemental graph in vertices of the college hill graph
 
 Params:
@@ -441,6 +462,9 @@ def recover_parameters(input, output):
     y = output1[1] - r * (input1[0] * math.sin(theta) + input1[1] * math.cos(theta))
 
     return x, y, theta, r, 1
+
+############################ END SEGMENTIZE #############################
+########################### GRAPH FROM EDGES ############################
 
 """given a list of edges, constructs a dictionary graph"""
 def graph_from_edges(edges):
