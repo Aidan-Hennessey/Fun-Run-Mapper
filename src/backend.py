@@ -67,7 +67,11 @@ Returns the list of paths
 """
 def read_in_data_new_api(lines) -> list[list[tuple[float, float]]]:
     paths = []
-    while (path_len := int(next(lines))):
+    while True:
+        try:
+            path_len = int(next(lines))
+        except StopIteration:
+            break
         path = []
         paths.append(path)
         for _ in range(path_len):
@@ -183,7 +187,9 @@ def api_v1():
 @app.route('/api/v2', methods=['POST'])
 def api_v2():
     string = request.form['full_data']
-    ...
+    list_of_lists = read_in_data_new_api(iter(string.splitlines()))
+    list_of_edges = subgraph_new_api(list_of_lists)
+    return write_edge_list(list_of_edges)
 
 if __name__ == "__main__":
     cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
