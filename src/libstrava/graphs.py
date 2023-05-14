@@ -40,11 +40,11 @@ import numpy as np
 import random
 from functools import reduce
 
-from kd_tree import KDTree
-from fast_gradient_decent import point_point_dist, embed
-from segment import Segment
-from edges import read_edges
-from points import read_gps
+from .kd_tree import KDTree
+from .fast_gradient_decent import point_point_dist, embed
+from .segment import Segment
+from .edges import read_edges
+from .points import read_gps
 
 root = "../.."
 

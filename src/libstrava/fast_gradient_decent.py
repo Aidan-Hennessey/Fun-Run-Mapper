@@ -1,8 +1,8 @@
 import numpy as np
 import math
 
-from edges import read_edges
-from kd_tree import KDTree
+from .edges import read_edges
+from .kd_tree import KDTree
 
 root = "../../"
 

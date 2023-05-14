@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import os
 
-from points import read_gps, plot_point, gps2pixel, pixel2gps
+from .points import read_gps, plot_point, gps2pixel, pixel2gps
 
 """GLOBALS"""
 root = "../../"

@@ -2,8 +2,8 @@ import numpy as np
 import heapq
 import math
 
-from fast_gradient_decent import edges_as_points, point_point_dist
-from kd_tree import KDTree
+from .fast_gradient_decent import edges_as_points, point_point_dist
+from .kd_tree import KDTree
 
 STABILITY = 4 # controls how stringently the walk tries to stick to the path
 
