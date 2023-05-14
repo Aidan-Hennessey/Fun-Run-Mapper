@@ -4,6 +4,7 @@ import math
 
 from .fast_gradient_decent import edges_as_points, point_point_dist
 from .kd_tree import KDTree
+from .graphs import misalignment
 
 STABILITY = 4 # controls how stringently the walk tries to stick to the path
 
@@ -163,3 +164,83 @@ class Segment:
             path.append(current)
             current = came_from[current]
         return path[::-1]
+    
+    """
+    the loss of a path through the graph with respect to this segment
+    In the distant future we would learn this from user input
+    For now it will be a combination of location and direction error
+    """
+    def loss(self, path):
+        points, points_to_edges = self.__sample_points(path)
+
+        sum_of_squared_errors = 0
+        for point in points:
+            dist_err = point_point_dist(self.kdtree.closest_point(point), point)
+            angle_err = self.__angle_err(point, points_to_edges(point))
+            sum_of_squared_errors += (dist_err * angle_err) ** 2
+
+        return sum_of_squared_errors
+
+    """
+    Samples points from consumed path to be evaluated for loss. Written by chat-GPT.
+    
+    Params:
+        path - the path to sample from, as a list of points
+        num_points - the number of points to sample. Defaults to 50
+    Returns:
+        sampled_points - a list of points that we sampled
+        points_to_edges_dict - a dictionary from the elements of sampled points to the
+                            edges on which they live
+    """
+    def __sample_points(self, path, num_points=50):
+        total_length = 0.0
+        lengths = []
+
+        # Calculate the total length of the path and the lengths between consecutive vertices
+        for i in range(len(path) - 1):
+            length = point_point_dist(path[i], path[i+1])
+            total_length += length
+            lengths.append(length)
+
+        # Calculate the distance between each sample point
+        distance_between_points = total_length / (num_points - 1)
+
+        sampled_points = []
+        current_distance = 0.0
+        points_to_edges_dict = {}
+
+        # Sample the points along the path
+        for i in range(len(lengths)):
+            length = lengths[i]
+            while current_distance <= length and len(sampled_points) < num_points:
+                ratio = current_distance / length
+                x1, y1 = path[i]
+                x2, y2 = path[i + 1]
+                x = x1 + (x2 - x1) * ratio
+                y = y1 + (y2 - y1) * ratio
+                sampled_points.append((x, y))
+                points_to_edges_dict[(x, y)] = (path[i], path[i+1])
+                current_distance += distance_between_points
+
+            current_distance -= length
+
+        return sampled_points, points_to_edges_dict
+    
+    """how far off a point is from the user-drawn curve"""
+    def __angle_err(self, point, edge):
+        nearest_edge = self.points2edges[self.kdtree.closest_point(point)]
+
+        a, b = np.array(edge[0]), np.array(edge[1])
+        c, d = np.array(nearest_edge[0]), np.array(nearest_edge[1])
+        point_vec = a - b
+        nearest_edge_vec = c - d
+
+        return misalignment(point_vec, nearest_edge_vec)
+
+def main():
+    seg = Segment([(7, 7)])
+    sampling = seg.sample_points([(0, 0), (0, 10), (12, 15), (0, 24), (11, 24)])
+    print(sampling)
+    
+if __name__ == "__main__":
+    main()

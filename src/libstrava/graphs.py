@@ -346,12 +346,19 @@ def segmentize(glued_graph, ch_points_tree : KDTree) -> list[Segment]:
                 break_point = ch_points_tree.closest_point(break_point)
                 path[path_len // 2] = break_point
 
+                print("segment:")
+                print(path[: path_len // 2 + 1])
+                print("segment:")
+                print(path[path_len // 2 :])
+
                 segments.append(Segment(path[: path_len // 2 + 1]))
                 segments.append(Segment(path[path_len // 2 :]))
 
             # so as to avoid double-counting segments
             # we'll miss a segment if both its endpoints get hashed to the same thing, but nbd
             if hash(tuple(vertex)) < hash(tuple(current)):
+                print("segment:")
+                print(path)
                 segments.append(Segment(path))
 
     return segments
@@ -406,7 +413,11 @@ def angle_measure(a, b, c):
     ba = a - b
     bc = c - b
 
-    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    return misalignment(ba, bc)
+
+"""Angle between vectors"""
+def misalignment(v1 : np.ndarray, v2 : np.ndarray):
+    cosine_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     return np.arccos(cosine_angle)
 
 """
@@ -489,7 +500,7 @@ def get_subgraph(ch_graph, ch_points_tree, paths):
     glued_graph = glue(paths)
     print(glued_graph)
     segments = segmentize(glued_graph, ch_points_tree)
-    print([segment.print() for segment in segments])
+    #print([segment.print() for segment in segments])
     drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
     return reduce(lambda x, y: x + y, drawn_segments, [])
 
