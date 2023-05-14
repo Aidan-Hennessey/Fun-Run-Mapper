@@ -82,8 +82,7 @@ def write_param_bundle(parameters):
     return f"{x}\n{y}\n{theta}\n{r}\n{gamma}\n"
 
 """Interface wrapper for gradient_decend"""
-def GD_iter(read_in_data):
-    points, graph, parameters = read_in_data()
+def GD_iter(points, graph, parameters):
     improved_bundle = gradient_decend(points, graph, parameters)
     return write_param_bundle(improved_bundle)
 
@@ -96,15 +95,13 @@ def write_edge_list(edges):
     return string
 
 """Interface wrapper for representative_subgraph"""
-def subgraph(read_in_data):
-    points, graph, parameters = read_in_data()
+def subgraph(points, graph, parameters):
     subg = representative_subgraph(points, graph, parameters)
     return write_edge_list(subg)
 
-def subgraph_new_api(read_in_data):
+def subgraph_new_api(paths):
     graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
     points_tree = KDTree(list(graph.keys()))
-    paths = read_in_data()
     
     subgraph = get_subgraph(graph, points_tree, paths)
 
@@ -112,8 +109,7 @@ def subgraph_new_api(read_in_data):
 interface wrapper for regularized_loss
 NOTE: Edges passed should JUST BE THE SUBGRAPH, NOT THE WHOLE GRAPH
 """
-def loss(read_in_data):
-    points, graph, parameters = read_in_data()
+def loss(points, graph, parameters):
     return str(embedding_loss(points, graph, parameters))
     # samples_to_parents = {}
     # subgraph_points = edges_as_points(subgraph, samples_to_parents)
@@ -134,8 +130,7 @@ def flip_points(points):
     return flipped_points
 
 """Interface wrapper for embed"""
-def embed_points(read_in_data):
-    points, _, parameters = read_in_data()
+def embed_points(points, _, parameters):
     points = embed(points, parameters)
     return write_points(points)
 
@@ -169,21 +164,19 @@ def api_v1():
     # we are sending a json with the data as a string in the field 'full_data'
     string = request.form['full_data']
     lines = iter(string.splitlines())
-
-    # note: this doesn't save the version of lines when it was defined since python lambdas don't close over data, just references
-    the_read = lambda: read_in_data_old_api(lines)
-
     call = next(lines)
+    data = read_in_data_old_api(lines)
+
     if call == "GD_iter":
-        return GD_iter(the_read)
+        return GD_iter(*data)
     elif call == "subgraph":
-        return subgraph(the_read)
+        return subgraph(*data)
     elif call == "loss":
-        return loss(the_read)
+        return loss(*data)
     elif call == "get_init":
         return get_init()
     elif call == "embed_points":
-        return embed_points(the_read)
+        return embed_points(*data)
     else:
         print(f"[-] Error: {call} is not a recognized function call", file=sys.stderr)
         return f"bad request: `{call}` must be GD_iter/subgraph/loss/get_init"

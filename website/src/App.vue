@@ -78,10 +78,18 @@ export default{
     async recieve_points(v) {
       this.points = v
 
-      let result = await fetch(this.$host, this.buildrequest("get_init"));
-      const params = await result.text()
-      this.curr_params = params
-      this.shared_code(params)
+      if (this.$api_v == 1) {
+        this.shared_code(params)
+        let result = await fetch(this.$host, this.buildrequest("get_init"));
+        const params = await result.text()
+        this.curr_params = params
+      } else {
+        this.doapi2()
+      }
+    },
+    async doapi2() {
+      const pts = this.points2str()
+      
     },
     // plot things that depend on params
     async shared_code(params) {
