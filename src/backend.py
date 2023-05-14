@@ -21,14 +21,6 @@ buffer = ""
 app = Flask(__name__)
 CORS(app)
 
-API_VERSION = 1
-
-def read_in_data(lines):
-    if API_VERSION == 1:
-        return read_in_data_old_api(lines)
-    else:
-        return read_in_data_new_api(lines)
-
 """
 Reads from stdin a point, graph, and parameter bundle
 Returns (points, graph, parameters)
@@ -90,8 +82,8 @@ def write_param_bundle(parameters):
     return f"{x}\n{y}\n{theta}\n{r}\n{gamma}\n"
 
 """Interface wrapper for gradient_decend"""
-def GD_iter(lines):
-    points, graph, parameters = read_in_data(lines)
+def GD_iter(read_in_data):
+    points, graph, parameters = read_in_data()
     improved_bundle = gradient_decend(points, graph, parameters)
     return write_param_bundle(improved_bundle)
 
@@ -104,15 +96,15 @@ def write_edge_list(edges):
     return string
 
 """Interface wrapper for representative_subgraph"""
-def subgraph(lines):
-    points, graph, parameters = read_in_data(lines)
+def subgraph(read_in_data):
+    points, graph, parameters = read_in_data()
     subg = representative_subgraph(points, graph, parameters)
     return write_edge_list(subg)
 
-def subgraph_new_api(lines):
+def subgraph_new_api(read_in_data):
     graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
     points_tree = KDTree(list(graph.keys()))
-    paths = read_in_data(lines)
+    paths = read_in_data()
     
     subgraph = get_subgraph(graph, points_tree, paths)
 
@@ -120,8 +112,8 @@ def subgraph_new_api(lines):
 interface wrapper for regularized_loss
 NOTE: Edges passed should JUST BE THE SUBGRAPH, NOT THE WHOLE GRAPH
 """
-def loss(lines):
-    points, graph, parameters = read_in_data(lines)
+def loss(read_in_data):
+    points, graph, parameters = read_in_data()
     return str(embedding_loss(points, graph, parameters))
     # samples_to_parents = {}
     # subgraph_points = edges_as_points(subgraph, samples_to_parents)
@@ -142,8 +134,8 @@ def flip_points(points):
     return flipped_points
 
 """Interface wrapper for embed"""
-def embed_points(lines):
-    points, _, parameters = read_in_data(lines)
+def embed_points(read_in_data):
+    points, _, parameters = read_in_data()
     points = embed(points, parameters)
     return write_points(points)
 
@@ -171,29 +163,34 @@ def getline() -> str:
 """
 The route the website interacts with
 """
-@app.route('/', methods=['POST'])
-def main():
+@app.route('/api/v1', methods=['POST'])
+def api_v1():
     # we are sending a json with the data as a string in the field 'full_data'
     string = request.form['full_data']
     lines = iter(string.splitlines())
 
-    line = next(lines)
-    if line == "GD_iter":
-        return GD_iter(lines)
-    elif line == "subgraph":
-        if API_VERSION == 1:
-            return subgraph(lines)
-        elif API_VERSION == 2:
-            return get_subgraph(lines)
-    elif line == "loss":
-        return loss(lines)
-    elif line == "get_init":
+    # note: this doesn't save the version of lines when it was defined since python lambdas don't close over data, just references
+    the_read = lambda: read_in_data_old_api(lines)
+
+    call = next(lines)
+    if call == "GD_iter":
+        return GD_iter(the_read)
+    elif call == "subgraph":
+        return subgraph(the_read)
+    elif call == "loss":
+        return loss(the_read)
+    elif call == "get_init":
         return get_init()
-    elif line == "embed_points":
-        return embed_points(lines)
+    elif call == "embed_points":
+        return embed_points(the_read)
     else:
-        print(f"[-] Error: {line} is not a recognized function call", file=sys.stderr)
-        return f"bad request: `{line}` must be GD_iter/subgraph/loss/get_init"
+        print(f"[-] Error: {call} is not a recognized function call", file=sys.stderr)
+        return f"bad request: `{call}` must be GD_iter/subgraph/loss/get_init"
+
+@app.route('/api/v2', methods=['POST'])
+def api_v2():
+    string = request.form['full_data']
+    ...
 
 if __name__ == "__main__":
     cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
