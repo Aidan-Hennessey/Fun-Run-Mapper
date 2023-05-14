@@ -67,7 +67,11 @@ Returns the list of paths
 """
 def read_in_data_new_api(lines) -> list[list[tuple[float, float]]]:
     paths = []
-    while (path_len := int(next(lines))):
+    while True:
+        try:
+            path_len = int(next(lines))
+        except StopIteration:
+            break
         path = []
         paths.append([])
         for _ in range(path_len):

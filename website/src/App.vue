@@ -51,8 +51,8 @@ export default{
           points.forEach(p => {
             str += `${p[0]} ${p[1]}\n`
           })
-          return str
         })
+        return str
       }
     },
     buildrequest(string) {
@@ -88,7 +88,7 @@ export default{
       }
     },
     async doapi2() {
-      const pts = this.points2str()
+      const pts = this.points2str() + '\n'
       fetch(this.$host, this.buildrequest(pts))
         .then(res => res.text())
         .then(res => this.chosen_subgraph = res)
