@@ -181,7 +181,10 @@ def main():
     if line == "GD_iter":
         return GD_iter(lines)
     elif line == "subgraph":
-        return get_subgraph(lines)
+        if API_VERSION == 1:
+            return subgraph(lines)
+        elif API_VERSION == 2:
+            return get_subgraph(lines)
     elif line == "loss":
         return loss(lines)
     elif line == "get_init":
