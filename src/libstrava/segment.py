@@ -4,7 +4,6 @@ import math
 
 from .fast_gradient_decent import edges_as_points, point_point_dist
 from .kd_tree import KDTree
-from .graphs import misalignment
 
 STABILITY = 4 # controls how stringently the walk tries to stick to the path
 
@@ -236,6 +235,11 @@ class Segment:
         nearest_edge_vec = c - d
 
         return misalignment(point_vec, nearest_edge_vec)
+    
+"""Angle between vectors"""
+def misalignment(v1 : np.ndarray, v2 : np.ndarray):
+    cosine_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+    return np.arccos(cosine_angle)
 
 def main():
     seg = Segment([(7, 7)])

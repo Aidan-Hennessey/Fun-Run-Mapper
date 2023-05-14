@@ -4,7 +4,7 @@ from .fast_gradient_decent import gradient_decend, regularized_loss, random_init
 from .points import read_gps
 from .edges import read_edges, point_edge_dist
 from .kd_tree import KDTree
-from .graphs import get_subgraph
+from .graphs import get_subgraph, graph_from_edges
 
 from .edges import main as edgestest 
 from .fast_gradient_decent import main as gradtest

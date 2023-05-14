@@ -43,7 +43,7 @@ import pathlib
 
 from .kd_tree import KDTree
 from .fast_gradient_decent import point_point_dist, embed
-from .segment import Segment
+from .segment import Segment, misalignment
 from .edges import read_edges
 from .points import read_gps
 
@@ -416,11 +416,6 @@ def angle_measure(a, b, c):
 
     return misalignment(ba, bc)
 
-"""Angle between vectors"""
-def misalignment(v1 : np.ndarray, v2 : np.ndarray):
-    cosine_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-    return np.arccos(cosine_angle)
-
 """
 Gets a representation of the vertices of the fundemental graph in vertices of the college hill graph
 
@@ -515,76 +510,4 @@ def main():
     print(subgraph)
 
 if __name__ == "__main__":
-    main()  
-
-########################### STUPID USELESS GARBAGE ######################################
-
-"""
-NOTE: BAD! We should not actually use this. Leaving here only bc I might want to reuse pieces
-
-Returns a fully condenced version of the graph (very few degree 2 vertices)
-There's a lot of stuff going on here. Loops are represented, probably poorly
-"""
-def fundemental_graph(graph):
-    graph = graph.copy()
-    while not done:
-        points = graph.keys()
-        points = random.shuffle(points)
-        for point in points:
-            if len(neighbors := graph[point]) == 2:
-                n1, n2 = neighbors
-                if n1 != n2: # this is so that FG has loops working
-                    points.remove(point)
-                    graph[n1].remove(point)
-                    graph[n1].append(n2)
-                    graph[n2].remove(point)
-                    graph[n2].append(n1)
-                    del graph[point]
-                    break
-        else:
-            done = True
-
-    return graph
-
-"""
-Random walk from start with a bias in end's direction. 
-Terminates upon reaching end or when no new points can be visited.
-Returns none in the latter case
-
-TODO: add momentum - momentum can be initialized based on direction 
-out in compressed graph. Momentum will make the graph way more human
-
-Params:
-    graph - graph of college hill
-    start - start point of the random walk
-    end - end point of the random walk
-Returns:
-    A list of edges detailing the walk in order from start to end
-    None if we get stuck before completing such a walk
-    NOTE: edges are from earlier point to later point, NOT sorted lexicographically.
-    They will need to be passed through sorted() before compared for equality with 
-    edges in the college hill edge list
-"""
-def semi_random_walk(graph, start, end):
-    walk = []
-    visited = [start]
-    current_point = start
-    while current_point != end:
-        targets = graph[current_point]
-        targets = [point for point in targets if point not in visited] # by chat-GPT
-        if len(targets) == 0:
-            return None
-        next_point = softmax_choose(targets, current_point)
-        walk.append((current_point, next_point))
-        current_point = next_point
-    return walk
-
-"""non-deterministically chooses a next point in the biased random walk. Written by chat-GPT"""
-def softmax_choose(points, target):
-    points = np.array(points)
-    target = np.array(target)
-    distances = np.linalg.norm(points - target, axis=1)
-    normalized_distances = (distances - np.min(distances)) / (np.max(distances) - np.min(distances)) + 0.1
-    # ^^ 0.1 is a parameter controlling how much the random walk wanders
-    softmax_vals = np.exp(normalized_distances) / np.sum(np.exp(normalized_distances))
-    return tuple(points[np.random.choice(len(points), p=softmax_vals)])
+    main()

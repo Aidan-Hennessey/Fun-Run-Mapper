@@ -13,7 +13,7 @@ from libstrava import KDTree
 from libstrava import gradient_decend, representative_subgraph, embed, \
                                 embedding_loss, random_init, edges_as_points
 from libstrava import gradient_decend, regularized_loss, random_init
-from libstrava import get_subgraph
+from libstrava import get_subgraph, graph_from_edges
 
 root = str(pathlib.Path(__file__).parent.parent)
 
@@ -65,7 +65,7 @@ string is the length n of the list on a line, then x y on the next n lines
 
 Returns the list of paths
 """
-def read_in_data_new_api(lines) -> list[list[tuple[float]]]:
+def read_in_data_new_api(lines) -> list[list[tuple[float, float]]]:
     paths = []
     while (path_len := int(next(lines))):
         path = []
