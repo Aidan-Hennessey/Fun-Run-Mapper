@@ -183,7 +183,9 @@ def api_v1():
 @app.route('/api/v2', methods=['POST'])
 def api_v2():
     string = request.form['full_data']
-    ...
+    list_of_lists = read_in_data_new_api(string)
+    list_of_edges = subgraph_new_api(list_of_lists)
+    return write_edge_list(list_of_edges)
 
 if __name__ == "__main__":
     cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
