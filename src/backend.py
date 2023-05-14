@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import socket
 from functools import reduce
+import pathlib
 
 from libstrava import read_gps
 from libstrava import read_edges, point_edge_dist
@@ -14,7 +15,8 @@ from libstrava import gradient_decend, representative_subgraph, embed, \
 from libstrava import gradient_decend, regularized_loss, random_init
 from libstrava import get_subgraph
 
-root = ".."
+root = str(pathlib.Path(__file__).parent.parent)
+
 buffer = ""
 app = Flask(__name__)
 CORS(app)

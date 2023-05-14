@@ -1,5 +1,8 @@
 import http.client
 import urllib.parse
+import sys
+
+from libstrava import edgestest, gradtest, pointstest
 
 HOST = 'sky.jason.cash'
 PORT = 8080
@@ -22,6 +25,15 @@ def main():
     9038 409832 09423 4302
     """
     print(request(content))
+    for file in sys.argv[1:]:
+        if file == "edges" or file == "edges.py":
+            edgestest()
+        elif file == "fast_gradient_decent" or file == "fast_gradient_decent.py" or file == "gradient_decent" or file == "gradient_decent.py":
+            gradtest()
+        elif file == "points" or file == "points.py":
+            pointstest()
+        else:
+            print(f"not found: {file}")
 
 if __name__ == "__main__":
     main()

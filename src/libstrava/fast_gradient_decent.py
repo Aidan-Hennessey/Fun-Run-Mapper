@@ -1,10 +1,11 @@
 import numpy as np
 import math
+import pathlib
 
 from .edges import read_edges
 from .kd_tree import KDTree
 
-root = "../../"
+root = str(pathlib.Path(__file__).parent.parent.parent)
 
 ################ HYPERPARAMETERS ####################
 XY_STEP = 0.00001
