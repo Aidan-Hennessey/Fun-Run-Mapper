@@ -163,6 +163,7 @@ def getline() -> str:
 """
 The route the website interacts with
 """
+@app.route('/api', methods=['POST'])
 @app.route('/api/v1', methods=['POST'])
 def api_v1():
     # we are sending a json with the data as a string in the field 'full_data'
