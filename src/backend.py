@@ -165,18 +165,17 @@ def api_v1():
     string = request.form['full_data']
     lines = iter(string.splitlines())
     call = next(lines)
-    data = read_in_data_old_api(lines)
 
     if call == "GD_iter":
-        return GD_iter(*data)
+        return GD_iter(*read_in_data_old_api(lines))
     elif call == "subgraph":
-        return subgraph(*data)
+        return subgraph(*read_in_data_old_api(lines))
     elif call == "loss":
-        return loss(*data)
+        return loss(*read_in_data_old_api(lines))
     elif call == "get_init":
         return get_init()
     elif call == "embed_points":
-        return embed_points(*data)
+        return embed_points(*read_in_data_old_api(lines))
     else:
         print(f"[-] Error: {call} is not a recognized function call", file=sys.stderr)
         return f"bad request: `{call}` must be GD_iter/subgraph/loss/get_init"
