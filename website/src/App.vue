@@ -88,7 +88,7 @@ export default{
       }
     },
     async doapi2() {
-      const pts = this.points2str() + '\n'
+      const pts = this.points2str()
       fetch(this.$host, this.buildrequest(pts))
         .then(res => res.text())
         .then(res => this.chosen_subgraph = res)
