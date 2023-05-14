@@ -89,7 +89,9 @@ export default{
     },
     async doapi2() {
       const pts = this.points2str()
-      
+      fetch(this.$host, this.buildrequest(pts))
+        .then(res => res.text())
+        .then(res => this.chosen_subgraph = res)
     },
     // plot things that depend on params
     async shared_code(params) {
