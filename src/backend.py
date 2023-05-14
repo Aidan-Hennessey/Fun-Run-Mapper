@@ -188,7 +188,7 @@ def main():
     elif line == "loss":
         return loss(lines)
     elif line == "get_init":
-        return get_init(lines)
+        return get_init()
     elif line == "embed_points":
         return embed_points(lines)
     else:

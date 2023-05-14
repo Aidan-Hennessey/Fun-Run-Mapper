@@ -18,11 +18,7 @@ def request(content):
     return r.read().decode()
 
 def main():
-    content = """hello
-    80948 90328 4098 2903
-    39048 20398 40392
-    483209 493028 403928 49320 
-    9038 409832 09423 4302
+    content = """get_init
     """
     print(request(content))
     for file in sys.argv[1:]:
