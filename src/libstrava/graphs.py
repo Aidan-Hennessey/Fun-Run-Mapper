@@ -32,7 +32,7 @@ from segment import Segment
 from edges import read_edges
 from points import read_gps
 
-root = ""
+root = "../.."
 
 GLUE_THRESH = 0.02
 STUBBLE_THRESH = 0.04
@@ -463,7 +463,9 @@ an exstravaganza run as a list of edges.
 """
 def get_subgraph(ch_graph, ch_points_tree, paths):
     glued_graph = glue(paths)
+    print(glued_graph)
     segments = segmentize(glued_graph, ch_points_tree)
+    print([segment.print() for segment in segments])
     drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
     return reduce(lambda x, y: x + y, drawn_segments, [])
 

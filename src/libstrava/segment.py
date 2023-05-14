@@ -27,6 +27,10 @@ class Segment:
         for i in range(len(self.path) - 1):
             edges.append((self.path[i], self.path[i+1]))
         return edges
+    
+    """a to-string for segment"""
+    def print(self):
+        print(self.path)
 
     """
     Returns a list of edges in the graph which form a path from start to end 
@@ -44,7 +48,9 @@ class Segment:
                 current = next
             else:
                 print("No path found; finishing with A*")
-                return self.finish(path, graph)
+                points = [edge[0] for edge in path] # first point in each edge
+                points.append(path[-1][1]) # include very last point
+                return self.finish(points, graph)
         print("path found :)")
         return path
                 
@@ -129,8 +135,8 @@ class Segment:
 
             # Explore the neighbors of the current node
             for neighbor in graph[current]:
-                # Calculate the tentative cost to reach the neighbor from the start node
-                tentative_g_score = g_score[current] + graph[current][neighbor]
+                # The cost for each edge is assumed to be 1
+                tentative_g_score = g_score[current] + 1
 
                 if neighbor in closed_set and tentative_g_score >= g_score.get(neighbor, float('inf')):
                     # Ignore this neighbor if it has already been visited and a better path has been found
