@@ -113,8 +113,8 @@ def do_the_glue(graph, path1, path2, i, j):
         graph[neighbor].append(p1)
         graph[p2].remove(neighbor)
         graph[p2].append(p1)
-        graph[p1].append[p2]
-        graph[p1].append[neighbor]
+        graph[p1].append(p2)
+        graph[p1].append(neighbor)
 
 """Returns a list of pairs of indices at which some gluing should occur"""                
 def find_intersections(path1, path2, path2KDtree : KDTree, point2index : dict):
@@ -462,7 +462,10 @@ def recover_parameters(input, output):
     # Compute the scaling factor r
     distance_input = math.sqrt(delta_x ** 2 + delta_y ** 2)
     distance_output = math.sqrt((output2[0] - output1[0]) ** 2 + (output2[1] - output1[1]) ** 2)
-    r = distance_output / distance_input
+    try:
+        r = distance_output / distance_input
+    except ZeroDivisionError:
+        r = 0.002
 
     # Compute the translation x and y
     x = output1[0] - r * (input1[0] * math.cos(theta) - input1[1] * math.sin(theta))
