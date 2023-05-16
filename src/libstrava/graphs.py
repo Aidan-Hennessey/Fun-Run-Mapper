@@ -488,6 +488,13 @@ def graph_from_edges(edges):
 
     return graph
 
+"""Given a list of points representing a path, returns the edges in that path"""
+def lop2loe(path):
+    edges = []
+    for i in range(len(path) - 1):
+        edges.append(tuple(sorted((path[i], path[i+1]))))
+    return edges
+
 """
 The big guy. Takes in a drawing, represented as a list of paths, and outputs
 an exstravaganza run as a list of edges.
@@ -497,8 +504,10 @@ def get_subgraph(ch_graph, ch_points_tree, paths):
     print(glued_graph)
     segments = segmentize(glued_graph, ch_points_tree)
     #print([segment.print() for segment in segments])
-    drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
-    return reduce(lambda x, y: x + y, drawn_segments, [])
+    drawn_segments = list(map(lambda x: lop2loe(x.draw(ch_graph)), segments))
+    answer = reduce(lambda x, y: x + y, drawn_segments, [])
+    print("ANSWER:", answer)
+    return answer
 
 def main():
     graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
