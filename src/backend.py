@@ -193,7 +193,6 @@ def api_v2():
     return write_edge_list(list_of_edges)
 
 if __name__ == "__main__":
-    # cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
-    # app.run(ssl_context=cert_files, host="0.0.0.0", port=8080)
-    app.run(host="0.0.0.0", port=8080)
+    cert_files = ('/etc/letsencrypt/live/sky.jason.cash/fullchain.pem', '/etc/letsencrypt/live/sky.jason.cash/privkey.pem')
+    app.run(ssl_context=cert_files, host="0.0.0.0", port=8080)
 
