@@ -1,6 +1,13 @@
 <template>
   <div class="container">
-    <canvas @mousedown="beginDrawing" @mousemove="keepDrawing" @mouseup="stopDrawing" id="drawing-board"></canvas>
+    <canvas 
+      @mousedown="e => beginDrawing(processevent(e, 0))" 
+      @mousemove="e => keepDrawing(processevent(e, 0))" 
+      @mouseup="e => stopDrawing(processevent(e, 0))" 
+      @touchstart="e => beginDrawing(processevent(e, 1))" 
+      @touchmove="e => keepDrawing(processevent(e, 1))" 
+      @touchend="e => stopDrawing(processevent(e, 1))"
+      id="drawing-board"></canvas>
     <mybutton @click="rec_button_clicked" text="Done" :icon="check"></mybutton>
 </div>
 </template>
@@ -25,6 +32,17 @@ export default{
   // code from https://codepen.io/reiallenramos/pen/MWaEmpw
   // looked at https://www.youtube.com/watch?v=mRDo-QXVUv8&ab_channel=JavaScriptAcademy
   methods: {
+    processevent(e, istouch) {
+      if (istouch == 0) {
+        return {offsetX: e.offsetX, offsetY: e.offsetY}
+      } else {
+        const touch = e.touches[0];
+        const targetRect = e.target.getBoundingClientRect();
+        const offsetX = touch.pageX - targetRect.left;
+        const offsetY = touch.pageY - targetRect.top;
+        return {offsetX: offsetX, offsetY: offsetY}
+      }
+    },
     drawLine(x1, y1, x2, y2) {
         let ctx = this.canvas;
         ctx.beginPath();

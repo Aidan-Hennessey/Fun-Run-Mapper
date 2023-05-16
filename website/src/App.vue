@@ -133,6 +133,8 @@ export default{
     async doapi2() {
       this.generation += 1
       const pts = this.points2str(2)
+      console.log("sending to api2:")
+      console.log(pts)
       fetch(this.$hostv2, this.buildrequest(pts))
         .then(res => res.text())
         .catch(e => {console.error("v2 api failed on input:"); console.log(pts)})
