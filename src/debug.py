@@ -4,15 +4,15 @@ import sys
 
 from libstrava import edgestest, gradtest, pointstest
 
-HOST = 'sky.jason.cash'
+HOST = '127.0.0.1'
 PORT = 8080
 
 def request(content):
-    conn = http.client.HTTPSConnection(HOST, PORT)
+    conn = http.client.HTTPConnection("localhost", PORT)
 
     headers = { 'content-type': 'application/x-www-form-urlencoded', }
     body = 'full_data=' + urllib.parse.quote(content)
-    conn.request('POST', '/', body=body, headers=headers)
+    conn.request('POST', '/api/v1', body=body, headers=headers)
 
     r = conn.getresponse()
     return r.read().decode()
