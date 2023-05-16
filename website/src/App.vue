@@ -49,7 +49,7 @@ export default{
         this.points.forEach(points => {
           str += `${points.length}\n`
           points.forEach(p => {
-            str += `${p[0]} ${p[1]}\n`
+            str += `${p[0]*2} ${p[1]}\n`
           })
         })
         return str
