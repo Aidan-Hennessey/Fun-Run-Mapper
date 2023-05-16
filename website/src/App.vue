@@ -93,11 +93,11 @@ export default{
         , "")
         return str
       } else if (api == 2) {
-        const str = this.points.reduce((acc, l) => {
-          acc + `${l.length}\n` + l.reduce((acc, p) => {
+        const str = this.points.reduce((acc, l) =>
+          acc + `${l.length}\n` + l.reduce((acc, p) =>
             acc + `${p[0]*2} ${p[1]}\n`
-          }, "")
-        }, "")
+          , "")
+        , "")
         return str
       }
     },
@@ -131,6 +131,7 @@ export default{
       this.doapi1()
     },
     async doapi2() {
+      this.generation += 1
       const pts = this.points2str(2)
       fetch(this.$hostv2, this.buildrequest(pts))
         .then(res => res.text())
