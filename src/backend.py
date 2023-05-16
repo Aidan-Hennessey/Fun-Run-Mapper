@@ -107,7 +107,7 @@ def subgraph_new_api(paths):
     graph = graph_from_edges(read_edges(f"{root}/data/edge_list.txt"))
     points_tree = KDTree(list(graph.keys()))
     
-    return list(set(get_subgraph(graph, points_tree, paths)))
+    return get_subgraph(graph, points_tree, paths)
 
 """
 interface wrapper for regularized_loss
@@ -189,6 +189,7 @@ def api_v2():
     string = request.form['full_data']
     list_of_lists = read_in_data_new_api(iter(string.splitlines()))
     list_of_edges = subgraph_new_api(list_of_lists)
+    print("list of edges (hopefully):", list_of_edges)
     return write_edge_list(list_of_edges)
 
 if __name__ == "__main__":

@@ -507,7 +507,7 @@ def get_subgraph(ch_graph, ch_points_tree, paths):
     print(glued_graph)
     segments = segmentize(glued_graph, ch_points_tree)
     #print([segment.print() for segment in segments])
-    drawn_segments = list(map(lambda x: lop2loe(x.draw(ch_graph)), segments))
+    drawn_segments = list(map(lambda x: x.draw(ch_graph), segments))
     answer = reduce(lambda x, y: x + y, drawn_segments, [])
     print("ANSWER:", answer)
     return answer

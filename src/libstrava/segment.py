@@ -36,7 +36,7 @@ class Segment:
     Returns a list of edges in the graph which form a path from start to end 
     and which resembles the segement in shape
     """
-    def draw(self, graph) -> list:
+    def draw(self, graph) -> list[tuple[tuple]]:
         path = []
         used = set()
         current = self.path[0]
@@ -47,10 +47,7 @@ class Segment:
                 used.add(next)
                 current = next
             else:
-                print("No path found; finishing with A*")
-                points = [edge[0] for edge in path] # first point in each edge
-                points.append(path[-1][1]) # include very last point
-                return self.__finish(points, graph)
+                return self.__finish(path, graph)
         print("path found :)")
         return path
                 
@@ -84,26 +81,33 @@ class Segment:
         return STABILITY * correction_vec + progress_vec
     
     """Takes a partially-drawn path and finishes it with A*"""
-    def __finish(self, path, graph) -> list:
+    def __finish(self, path : list[tuple[tuple]], graph) -> list[tuple[tuple]]:
+        print("No path found; finishing with A*")
+        points = [edge[0] for edge in path] # first point in each edge
+        try:
+            points.append(path[-1][1]) # include very last point
+        except IndexError: # path is empty - we got nowhere
+            points = [self.path[0]]
+
         # find the closest point in path to end
         end = self.path[-1]
         closest_dist = math.inf
-        for i, point in enumerate(path):
+        for i, point in enumerate(points):
             if (new_dist := point_point_dist(point, end)) < closest_dist:
                 closest_dist = new_dist
                 closest_index = i
         
         # do A* from closest point to end
-        return path[:closest_index] + self.a_star(graph, start=path[closest_index])
+        return path[:closest_index] + self.a_star(graph, start=points[closest_index])
 
     """
     Computes a path connecting this segment's endpoints without regard for the 
     shape of the segment. In particular, implements A* algorithm. Written by chat-GPT.
 
     Params: graph is the graph of college hill in dict of neighbors form
-    Returns: a list of edges giving a directish path between the segment endpoints
+    Returns: a list of points giving a directish path between the segment endpoints
     """
-    def a_star(self, graph, start=None):
+    def a_star(self, graph, start=None) -> list[tuple[tuple]]:
         if start == None:
             start = self.path[0]
         end = self.path[-1]
@@ -157,10 +161,13 @@ class Segment:
         return None
 
     """Reconstructs the path from the start node to the current node"""
-    def __reconstruct_path(self, came_from, current):
+    def __reconstruct_path(self, came_from, current) -> list[tuple[tuple]]:
         path = []
         while current in came_from:
-            path.append(current)
+            try:
+                path.append((current, came_from[current]))
+            except IndexError:
+                pass
             current = came_from[current]
         return path[::-1]
     
