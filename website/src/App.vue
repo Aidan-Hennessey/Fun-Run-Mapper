@@ -93,7 +93,7 @@ export default{
       console.log(pts)
       fetch(this.$host, this.buildrequest(pts))
         .then(res => res.text())
-        .then(res => this.chosen_subgraph = res)
+        .then(res => {console.log("res"); console.log(res); this.chosen_subgraph = this.str2arr(res)})
     },
     // plot things that depend on params
     async shared_code(params) {
