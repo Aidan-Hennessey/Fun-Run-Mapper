@@ -6,8 +6,8 @@
         <mybutton @click="$emit('draw_state_change')" :text="mytext" :icon="myicon"/>
     </div>
     <div class="intermediate">
-        <h1>Miles: {{calc_miles()}}</h1>
-        <h1 id="loss">Loss: {{calc_loss()}}</h1>
+        <h1 class="label">Miles: {{calc_miles()}}</h1>
+        <h1 class="label">Loss: {{calc_loss()}}</h1>
     </div>
     <div class="intermediate">
         <mybutton @click="nyi" text="Share" :icon="share"/>
@@ -96,7 +96,7 @@ h1 {
     font-size: 18px;
     font-family: inherit;
 }
-#loss {
+.label {
     width: 120px;
 }
 </style>
