@@ -433,11 +433,11 @@ def get_embedding(ch_points_tree : KDTree, fg_points):
     return list(map_image)
 
 def get_embedding_params():
-    x = 41.823 #+ 0.017 * np.random.rand()
-    y = -71.388 #- 0.015 * np.random.rand()
-    theta = 0#2 * math.pi * np.random.rand()
-    r = 0.005 #+ 0.01 * np.random.rand()
-    gamma = 1#0.8 + 0.4 * np.random.rand()
+    x = 41.823 + 0.017 * np.random.rand()
+    y = -71.388 - 0.015 * np.random.rand()
+    theta = 2 * math.pi * np.random.rand()
+    r = 0.02 + 0.01 * np.random.rand()
+    gamma = 0.8 + 0.4 * np.random.rand()
     return x, y, theta, r, gamma
 
 """
