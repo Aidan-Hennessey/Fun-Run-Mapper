@@ -2,9 +2,23 @@
     <div class="main-content">
         <drawarea v-if="drawing" v-on:draw_state_change="this.drawing = !this.drawing" v-on:points="recieve_points"/>
         <div class="diagonal" v-if="drawing"></div>
-        <streets :isdrawing="drawing" :vertices="graph" :edges="edges" :points="embeded_points" :subgraph="chosen_subgraph"/>
+        <streets 
+          :isdrawing="drawing" 
+          :vertices="graph" 
+          :edges="edges" 
+          :points="embeded_points" 
+          :subgraph="chosen_subgraph" 
+          :generation="generation"/>
     </div>
-    <toolbar v-on:play_button_press="play_button_press" v-on:draw_state_change="this.drawing = !this.drawing" :loss="loss" :canplay="!drawing && points && curr_params" :isdrawing="drawing"/>
+    <toolbar 
+      v-on:play1_button_press="play_button_press" 
+      v-on:play2_button_press="doapi2" 
+      v-on:draw_state_change="this.drawing = !this.drawing" 
+      :loss="loss" 
+      :canplay1="!drawing && points && curr_params" 
+      :canplay2="!drawing && points" 
+      :miles="calc_miles()" 
+      :isdrawing="drawing"/>
 </template>
 
 <script>
@@ -13,23 +27,56 @@ import drawarea from "./components/drawarea/index.vue"
 import streets from "./components/streets/index.vue"
 import toolbar from "./components/toolbar/index.vue"
 
-import large_arrays from "./assets/arr.js"
+import raw_verts from "./assets/verts.txt" // using raw-loader on .txt files
+import raw_edges from "./assets/edge_list.txt" // using raw-loader on .txt files
+import { getTransitionRawChildren } from "vue"
 
 export default{
   components: {mybutton,drawarea,streets,toolbar},
   data() {
     return {
       drawing: true,
-      edges: large_arrays.edges,
-      graph: large_arrays.verts,
+      edges: this.raw_to_arr(raw_edges),
+      graph: this.raw_to_arr(raw_verts),
       points: null,
       loss: null,
       embeded_points: null,
       chosen_subgraph: null,
       curr_params: null,
+      generation: 0,
     }
   },
   methods: {
+    raw_to_arr(raw) {
+      let arr = raw.split("\n").map(x => x.split(" ").map(parseFloat))
+      return arr
+    },
+    gps_dist(lat1, lon1, lat2, lon2) {
+      // https://www.movable-type.co.uk/scripts/latlong.html?from=49.1715000,-121.7493500&to=49.18258,-121.75441
+      const R = 6371e3; // metres
+      const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+      const φ2 = lat2 * Math.PI/180;
+      const Δφ = (lat2-lat1) * Math.PI/180;
+      const Δλ = (lon2-lon1) * Math.PI/180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      const d = R * c;
+      return d / 1609
+    },
+    calc_miles() {
+      if (this.chosen_subgraph) {
+        return this.chosen_subgraph.reduce((acc, e) =>
+          acc + this.gps_dist(e[0], e[1], e[2], e[3]),
+          0
+        )
+      } else {
+        return null
+      }
+    },
     edges2str() {
         let str = `${this.edges.length}\n`
         this.edges.forEach(e => {
@@ -37,21 +84,20 @@ export default{
         })
         return str
     },
-    points2str() {
-      if (this.$api_v == 1) {
-        let str = `${this.points.length}\n`
-        this.points.forEach(p => {
-            str += `${p[0]} ${p[1]}\n`
-        })
+    points2str(api) {
+      if (api == 1) {
+        const len = this.points.reduce((acc, val) => acc + val.length, 0)
+        let str = `${len}\n`
+        str += this.points.reduce((acc, l) =>
+            acc + l.reduce((acc, p) => acc + `${p[0]} ${p[1]}\n`, "")
+        , "")
         return str
-      } else if (this.$api_v == 2) {
-        let str = ''
-        this.points.forEach(points => {
-          str += `${points.length}\n`
-          points.forEach(p => {
-            str += `${p[0]*2} ${p[1]}\n`
-          })
-        })
+      } else if (api == 2) {
+        const str = this.points.reduce((acc, l) => {
+          acc + `${l.length}\n` + l.reduce((acc, p) => {
+            acc + `${p[0]*2} ${p[1]}\n`
+          }, "")
+        }, "")
         return str
       }
     },
@@ -68,59 +114,56 @@ export default{
       for (let i = 1; i < arr.length-1; i++) {
         arr[i-1] = arr[i].split(" ").map(parseFloat)
       }
-      arr.pop() // for the 1st element that was overwritten
+      arr.pop() // for the 1st element (length) that was overwritten
       arr.pop() // remove blank line from last \n
       if (n != arr.length) {
-        console.error("bad things")
+        console.error(`the length specified by backend, ${n} not equal to the length recieved ${arr.length}`)
       }
       return arr
     },
     async recieve_points(v) {
+      this.generation += 1
       this.points = v
+      let result = await fetch(this.$hostv1, this.buildrequest("get_init"))
+      const params = await result.text()
+      this.curr_params = params
 
-      if (this.$api_v == 1) {
-        let result = await fetch(this.$host, this.buildrequest("get_init"));
-        const params = await result.text()
-        this.curr_params = params
-        this.shared_code(params)
-      } else {
-        this.doapi2()
-      }
+      this.doapi1()
     },
     async doapi2() {
-      const pts = this.points2str()
-      console.log("COPY THIS")
-      console.log(pts)
-      fetch(this.$host, this.buildrequest(pts))
+      const pts = this.points2str(2)
+      fetch(this.$hostv2, this.buildrequest(pts))
         .then(res => res.text())
-        .then(res => {console.log("res"); console.log(res); this.chosen_subgraph = this.str2arr(res)})
+        .then(res => {this.chosen_subgraph = this.str2arr(res)})
     },
     // plot things that depend on params
-    async shared_code(params) {
-      const pts = this.points2str()
+    async doapi1() {
+      const params = this.curr_params
+      const pts = this.points2str(1)
       const edges = this.edges2str() 
 
       let str = 'loss\n' + pts + edges + params
-      fetch(this.$host, this.buildrequest(str))
+      fetch(this.$hostv1, this.buildrequest(str))
         .then(res => res.text())
         .then(res => this.loss = res)
 
       str = 'embed_points\n' + pts + '0\n' + params
-      let result = await fetch(this.$host, this.buildrequest(str))
+      let result = await fetch(this.$hostv1, this.buildrequest(str))
       this.embeded_points = this.str2arr(await result.text())
 
       str = 'subgraph\n' + pts + edges + params
-      result = await fetch(this.$host, this.buildrequest(str))
+      result = await fetch(this.$hostv1, this.buildrequest(str))
       this.chosen_subgraph = this.str2arr(await result.text())
     },
     async play_button_press() {
-      const pts = this.points2str()
+      this.generation += 1
+      const pts = this.points2str(1)
       const edges = this.edges2str()
       let str = 'GD_iter\n' + pts + edges + this.curr_params
-      let result = await fetch(this.$host, this.buildrequest(str))
+      let result = await fetch(this.$hostv1, this.buildrequest(str))
       const params = await result.text()
       this.curr_params = params
-      this.shared_code(params)
+      this.doapi1(params)
     }
   }
 }

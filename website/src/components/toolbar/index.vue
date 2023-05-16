@@ -1,12 +1,13 @@
 <template>
   <div class="container">
     <div class="intermediate">
-        <mybutton @click="tryplay" text="Step" :icon="play" :isactive="!canplay"/>
+        <mybutton @click="tryplay1" text="Algorithm 1" :icon="play" :isactive="!canplay1"/>
+        <mybutton @click="tryplay2" text="Algorithm 2" :icon="play" :isactive="!canplay2"/>
         <mybutton @click="$emit('draw_state_change')" :text="mytext" :icon="myicon"/>
     </div>
     <div class="intermediate">
-        <h1>Miles: -.-</h1>
-        <h1 id="loss">Loss: {{Math.round(loss * 1e9) / 100}}</h1>
+        <h1>Miles: {{calc_miles()}}</h1>
+        <h1 id="loss">Loss: {{calc_loss()}}</h1>
     </div>
     <div class="intermediate">
         <mybutton @click="nyi" text="Share" :icon="share"/>
@@ -23,8 +24,8 @@ import map from "@/assets/map.svg"
 import share from "@/assets/share.svg"
 
 export default{
-  props: ["loss", "canplay", "isdrawing"],
-  emits: ["draw_state_change", "play_button_press"],
+  props: ["loss", "canplay1", "canplay2", "isdrawing", "miles"],
+  emits: ["draw_state_change", "play_button_press", "v2_button_press"],
   components: {mybutton},
   data() {
     return {
@@ -43,12 +44,31 @@ export default{
     }
   },
   methods: {
+    calc_loss() {
+      if (this.loss) {
+        return Math.round(this.loss * 1e9) / 100
+      } else {
+        return '-.-'
+      }
+    },
+    calc_miles() {
+      if (this.miles) {
+        return Math.round(this.miles * 100) / 100
+      } else {
+        return '-.-'
+      }
+    },
     nyi() {
       alert("not implemented")
     },
-    tryplay() {
-      if (this.canplay) {
-        this.$emit('play_button_press')
+    tryplay2() {
+      if (this.canplay2) {
+        this.$emit('play2_button_press')
+      }
+    },
+    tryplay1() {
+      if (this.canplay1) {
+        this.$emit('play1_button_press')
       }
     }
   },

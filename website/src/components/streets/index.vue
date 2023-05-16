@@ -8,28 +8,26 @@
 
 <script>
 export default{
-  props: ['isdrawing', 'vertices', 'edges', 'points', 'subgraph'],
+  props: ['isdrawing', 'vertices', 'edges', 'points', 'subgraph', 'generation'],
   data() {
     return {
     }
   },
   watch: {
+    generation: function() {
+      const d = document.getElementById("yoink")
+      const ctx = this.canvas
+      ctx.clearRect(0, 0, d.width, d.height)
+      this.plot_graph()
+    },
     isdrawing: function() {
       const d = document.getElementById("colors")
       // d.style.backgroundColor = this.isdrawing ? "var(--red)" : "var(--blue)"
     },
     points: function() {
-      const d = document.getElementById("yoink")
-      const ctx = this.canvas
-      ctx.clearRect(0, 0, d.width, d.height)
-      this.plot_graph()
       this.draw2(this.points,"#00FF00",7)
     },
     subgraph: function() {
-      const d = document.getElementById("yoink")
-      const ctx = this.canvas
-      ctx.clearRect(0, 0, d.width, d.height)
-      this.plot_graph()
       this.draw4(this.subgraph,"#0000FF",5)
     }
   },
