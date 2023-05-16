@@ -79,10 +79,10 @@ export default{
       this.points = v
 
       if (this.$api_v == 1) {
-        this.shared_code(params)
         let result = await fetch(this.$host, this.buildrequest("get_init"));
         const params = await result.text()
         this.curr_params = params
+        this.shared_code(params)
       } else {
         this.doapi2()
       }
