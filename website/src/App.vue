@@ -135,6 +135,7 @@ export default{
       const pts = this.points2str(2)
       fetch(this.$hostv2, this.buildrequest(pts))
         .then(res => res.text())
+        .catch(e => {console.error("v2 api failed on input:"); console.log(pts)})
         .then(res => {this.chosen_subgraph = this.str2arr(res)})
     },
     // plot things that depend on params
@@ -143,18 +144,20 @@ export default{
       const pts = this.points2str(1)
       const edges = this.edges2str() 
 
-      let str = 'loss\n' + pts + edges + params
-      fetch(this.$hostv1, this.buildrequest(str))
+      const lossstr = 'loss\n' + pts + edges + params
+      fetch(this.$hostv1, this.buildrequest(lossstr))
         .then(res => res.text())
         .then(res => this.loss = res)
 
-      str = 'embed_points\n' + pts + '0\n' + params
-      let result = await fetch(this.$hostv1, this.buildrequest(str))
-      this.embeded_points = this.str2arr(await result.text())
+      const ptsstr = 'embed_points\n' + pts + '0\n' + params
+      fetch(this.$hostv1, this.buildrequest(ptsstr))
+        .then(res => res.text())
+        .then(res => this.embeded_points = this.str2arr(res))
 
-      str = 'subgraph\n' + pts + edges + params
-      result = await fetch(this.$hostv1, this.buildrequest(str))
-      this.chosen_subgraph = this.str2arr(await result.text())
+      const substr = 'subgraph\n' + pts + edges + params
+      fetch(this.$hostv1, this.buildrequest(substr))
+        .then(res => res.text())
+        .then(res => this.chosen_subgraph = this.str2arr(res))
     },
     async play_button_press() {
       this.generation += 1
