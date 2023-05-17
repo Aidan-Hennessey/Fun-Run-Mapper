@@ -210,6 +210,11 @@ html, body{
   height: 100%;
   width: 100%;
 }
+@media (hover: none) and (pointer: coarse) {
+  body, html {
+    overflow: hidden
+  }
+}
 .main-content {
   display: grid;
   place-items: center;
